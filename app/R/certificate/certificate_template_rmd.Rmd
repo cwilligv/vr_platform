@@ -1,0 +1,166 @@
+---
+title: ""
+output: 
+  pdf_document:
+    latex_engine: xelatex
+    keep_tex: false
+geometry: margin=0.75in, landscape
+header-includes:
+  - \usepackage{graphicx}
+  - \usepackage{xcolor}
+  - \usepackage{tikz}
+  - \usetikzlibrary{shapes.geometric}
+  - \pagenumbering{gobble}
+  - \usepackage[T1]{fontenc}
+  - \setmainfont{Latin Modern Roman}
+params:
+  name: "Paulo Cesar Alamos Muñoz"
+  rut: "15.450.224-6"
+  cargo: "Técnico Mecánico"
+  empresa: "Tecnologías Cobra"
+  course: "Capacitacion de Habilidades"
+  date: "nov 10, 2025 at 01:58a. m. UTC"
+  hora: "05:00pm"
+  duration: "1 hora 3 minutos"
+  skill1: "Herramientas de IA generativa"
+  skill2: "Inteligencia artificial"
+  skill3: "IA generativa"
+  skill4: ""
+  skill5: ""
+  skill6: ""
+  instructor: "Dominique, directora de formación global"
+  instructor_name: "Dominique"
+  # cert_id: "975cd32fc40a721d4983cc8119daf41d0c1661f3fc1725355bc8ea570a32b917"
+  qr_path: ""
+  logo_path: ""
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+# Collect non-empty skills into a list
+skills <- c(params$skill1, params$skill2, params$skill3, 
+            params$skill4, params$skill5, params$skill6)
+skills <- skills[skills != ""]
+num_skills <- length(skills)
+```
+
+\begin{center}
+
+% \vspace*{0.5cm}
+
+% 1. Save the logo width to a length variable
+\newlength{\logowidth}
+\settowidth{\logowidth}{\includegraphics[height=1.5cm]{images/merc_720.png}}
+
+% Company Logo - Image from www folder
+\includegraphics[height=1.5cm]{images/merc_720.png}
+
+% 3. Display CONSULTORA stretched to that exact width
+\begin{tikzpicture}
+% We use resizebox to stretch/shrink the text to \logowidth
+\node[inner sep=0pt] (consultora) {
+    \resizebox{\logowidth}{!}{%
+        \textbf{\textcolor{gray!70}{CONSULTORA}}%
+    }
+};
+
+% Draw the lines using the node boundaries
+\draw[gray!50, line width=0.5pt] ([yshift=2pt]consultora.north west) -- ([yshift=2pt]consultora.north east);
+\draw[gray!50, line width=0.5pt] ([yshift=-2pt]consultora.south west) -- ([yshift=-2pt]consultora.south east);
+\end{tikzpicture}
+
+\vspace{0.8cm}
+
+% Title
+{\fontsize{32}{38}\selectfont \textbf{`r params$course`}}
+
+\vspace{0.8cm}
+
+% Completion text
+{\fontsize{16}{20}\selectfont Capacitación realizada a \textbf{`r params$name`} (`r params$rut`)}
+
+\vspace{0.2cm}
+
+{\fontsize{16}{20}\selectfont \textbf{`r params$cargo`} - \textbf{`r params$empresa`}.}
+
+\vspace{0.4cm}
+
+{\fontsize{13}{16}\selectfont `r params$date`, a las `r params$hora` - `r params$duration`.}
+
+\vspace{0.8cm}
+
+% Skills section - only show if there are skills
+```{r skills-section, results='asis'}
+if (num_skills > 0) {
+  cat("% Skills badges\n")
+  cat("\\vspace{0.3cm}\n\n")
+  
+  # Generate TikZ code for skills badges
+  cat("\\begin{tikzpicture}\n")
+  
+  # Calculate positions for badges - centered layout
+  # Arrange in rows of up to 3 badges each
+  x_positions <- c(0, 5.5, 10.5)  # x positions for up to 3 badges per row
+  
+  for (i in seq_along(skills)) {
+    row <- ceiling(i / 3) - 1  # 0-indexed row
+    col <- ((i - 1) %% 3) + 1  # 1-indexed column position
+    
+    x_pos <- x_positions[col]
+    y_pos <- -row * 1.2  # each row is 1.2cm below the previous
+    
+    # Escape special LaTeX characters in skill text
+    skill_text <- gsub("&", "\\\\&", skills[i])
+    skill_text <- gsub("%", "\\\\%", skill_text)
+    skill_text <- gsub("_", "\\\\_", skill_text)
+    
+    # Calculate minimum width based on longest skill text (approx 0.2cm per char)
+    max_chars <- max(nchar(skills))
+    min_width <- paste0(round(max_chars * 0.22, 1), "cm")
+    
+    cat(sprintf("\\node[draw=gray!50, rounded corners=12pt, inner xsep=12pt, inner ysep=6pt, line width=1pt, align=center, minimum width=%s] at (%s,%s) {%s};\n",
+                min_width, x_pos, y_pos, skill_text))
+  }
+  
+  cat("\\end{tikzpicture}\n\n")
+  
+  cat("\\vspace{0.8cm}\n")
+} else {
+  cat("\\vspace{0.5cm}\n")
+}
+```
+
+\vspace{0.8cm}
+
+% Bottom section - QR code and validation text centered
+\vfill
+
+\noindent
+\begin{minipage}[b]{\textwidth}
+\centering
+% QR Code and validation text
+\begin{tabular}{@{}c@{\hspace{0.5cm}}c@{}}
+$\vcenter{\hbox{\includegraphics[height=2.5cm]{`r params$qr_path`}}}$ & 
+\begin{minipage}[c][2.5cm][c]{0.55\textwidth}
+\centering
+{\fontsize{13}{16}\selectfont Este certificado cuenta con validación digital. \\Para verificar su autenticidad, escanee el código QR.}
+\end{minipage}
+\end{tabular}
+\end{minipage}
+
+\vspace{0.8cm}
+
+% Footer - centered on full page
+{\fontsize{9}{11}\selectfont MERC Consultora Limitada - Consultoría y Servicios Profesionales}
+
+{\fontsize{9}{11}\selectfont MERCCONSULTORA.CL}
+
+\end{center}
+
+\begin{tikzpicture}[remember picture, overlay]
+% Sello image - positioned in absolute bottom right corner
+\node[anchor=south east, xshift=-1cm, yshift=1cm] at (current page.south east) {
+  \includegraphics[height=3.5cm]{images/sello_certificado.png}
+};
+\end{tikzpicture}

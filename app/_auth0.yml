@@ -1,0 +1,9 @@
+name: myApp
+# remote_url: 'https://c3d-app-bnwqam5fia-uc.a.run.app'
+# remote_url: 'https://cwillig.shinyapps.io/capacitacion3d/'
+remote_url: ''
+auth0_config:
+  api_url: !expr paste0('https://', env$AUTH0_USER, '.auth0.com')
+  credentials:
+    key: !expr env$AUTH0_KEY
+    secret: !expr env$AUTH0_SECRET

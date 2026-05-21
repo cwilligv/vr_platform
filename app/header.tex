@@ -1,0 +1,13 @@
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\usepackage{tikz}
+\fancyhead{%
+  \begin{tikzpicture}[remember picture, overlay, outer sep=0pt, inner sep=0pt]
+  \fill[blue] (-18,5.5) rectangle ++(\paperwidth,-4cm);
+  \node at (-17,3) {\includegraphics[width=2cm]{C:/Users/WIL106452/Documents/PP/capacitacion3d/capacitacion3d/www/images/merc_720.png}};
+  \node[green,font=\large\sffamily\bfseries] at (-14,3) {some text};
+  \end{tikzpicture}
+}
+\fancypagestyle{plain}[fancy]{}
+\renewcommand{\headrulewidth}{0pt}
+\setlength{\headheight}{4cm}
