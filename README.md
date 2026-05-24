@@ -1,2 +1,2 @@
-# capacitacion3d
-Plataforma de apoyo para la gestion de capacitaciones para clientes de MERC
+# Plataforma VR
+Plataforma de apoyo para la gestion de VR para clientes de MERC
