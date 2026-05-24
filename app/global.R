@@ -1,3 +1,13 @@
+# Load environment variables
+# Only load .env file if not running on Cloud Run (K_SERVICE is set by Cloud Run)
+if (Sys.getenv("K_SERVICE") == "") {
+  dotenv::load_dot_env()
+}
+# Set R_CONFIG_ACTIVE to prod (can be overridden by environment variable)
+if (Sys.getenv("R_CONFIG_ACTIVE") == "") {
+  Sys.setenv(R_CONFIG_ACTIVE = "prod")
+}
+
 library(shiny)
 library(shinyBS)
 library(bs4Dash)
@@ -28,15 +38,13 @@ library(gt)
 library(rmarkdown)
 library(kableExtra)
 library(knitr)
-# library(pagedown)
 library(openxlsx)
 library(bslib)
 library(rvest)
 library(shinyWidgets)
 library(base64enc)
-# library(shiny.telemetry)
 
-Sys.setenv(R_CONFIG_ACTIVE = "prod")
+# Get config based on R_CONFIG_ACTIVE environment variable
 env <- config::get()
 
 db <- env$MySQL_DB
