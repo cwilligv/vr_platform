@@ -37,8 +37,9 @@ vignettes/*.pdf
 *.knit.md
 
 # R Environment Variables
+.env
+.env.local
 .Renviron
-config.yml
 
 # pkgdown site
 docs/

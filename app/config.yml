@@ -1,0 +1,20 @@
+default:
+  ENV: "d"
+  
+prod:
+  ENV: "p"
+  MySQL_HOST: !expr Sys.getenv("MySQL_HOST")
+  MySQL_USER: !expr Sys.getenv("MySQL_USER")
+  MySQL_PASS: !expr Sys.getenv("MySQL_PASS")
+  MySQL_DB: !expr Sys.getenv("MySQL_DB")
+  MySQL_PORT: !expr Sys.getenv("MySQL_PORT")
+  P_API_KEY: !expr Sys.getenv("P_API_KEY")
+  EMAIL_USERNAME: !expr Sys.getenv("EMAIL_USERNAME")
+  EMAIL_PWD: !expr Sys.getenv("EMAIL_PWD")
+  EMAIL_PAGOS_USER: !expr Sys.getenv("EMAIL_PAGOS_USER")
+  EMAIL_PAGOS_PWD: !expr Sys.getenv("EMAIL_PAGOS_PWD")
+  EMAIL_SMTP: !expr Sys.getenv("EMAIL_SMTP")
+  AUTH0_USER: !expr Sys.getenv("AUTH0_USER")
+  AUTH0_KEY: !expr Sys.getenv("AUTH0_KEY")
+  AUTH0_SECRET: !expr Sys.getenv("AUTH0_SECRET")
+  LLM_API: !expr Sys.getenv("LLM_API")
