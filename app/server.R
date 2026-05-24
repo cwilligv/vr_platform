@@ -242,11 +242,11 @@ server = function(input, output, session) {
     time_of_day <- "Hola"
     
     if (hora >= 6 & (hora < 12 | (hora == 11 & minuto <= 59))) {
-      time_of_day <- "¡VR Buenos días!"
+      time_of_day <- "¡Vuenos Rías!"
     } else if (hora >= 12 & (hora < 21 | (hora == 20 & minuto <= 59))) {
-      time_of_day <- "¡VR Buenas tardes!"
+      time_of_day <- "¡Vuenas Rardes!"
     } else {
-      time_of_day <- "¡VR Buenas noches!"
+      time_of_day <- "¡Vuenas Roches!"
     }
     
     tagList(tags$img(src=paste0("images/waving_hand_", env$ENV, ".png"), height=30,width=30), paste0(" ",time_of_day, " ", nombre, ","))
