@@ -66,6 +66,7 @@ RUN R -e 'install.packages("rvest", repos="http://cran.rstudio.com", dependencie
 RUN R -e 'install.packages("qrcode", repos="http://cran.rstudio.com", dependencies = TRUE)'
 RUN R -e 'install.packages("RMySQL", repos="http://cran.rstudio.com", dependencies = TRUE)'
 RUN R -e 'install.packages("base64enc", repos="http://cran.rstudio.com", dependencies = TRUE)'
+RUN R -e 'install.packages("dotenv", repos="http://cran.rstudio.com")'
 RUN R -e 'require(devtools)'
 
 RUN R -e 'devtools::install_version("auth0", version = "0.2.1", dependencies = TRUE, repos = "http://cran.rstudio.com")'
