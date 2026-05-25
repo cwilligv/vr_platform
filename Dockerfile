@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     libssh2-1-dev \
     libglpk-dev \
+    libuv1-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
