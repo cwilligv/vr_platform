@@ -66,6 +66,7 @@ RUN R -e 'install.packages("qrcode", repos="http://cran.rstudio.com", dependenci
 RUN R -e 'install.packages("RMySQL", repos="http://cran.rstudio.com", dependencies = TRUE)'
 RUN R -e 'install.packages("base64enc", repos="http://cran.rstudio.com", dependencies = TRUE)'
 RUN R -e 'install.packages("dotenv", repos="http://cran.rstudio.com")'
+RUN R -e 'install.packages("fs", repos="http://cran.rstudio.com", dependencies = TRUE)'
 RUN R -e 'install.packages("gt", repos="http://cran.rstudio.com")'
 RUN R -e 'install.packages("dbplyr", repos="http://cran.rstudio.com")'
 RUN R -e 'install.packages("waiter", repos="http://cran.rstudio.com")'
