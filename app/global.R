@@ -45,9 +45,18 @@ library(rvest)
 library(base64enc)
 
 # Get config based on R_CONFIG_ACTIVE environment variable
+message("R_CONFIG_ACTIVE: ", Sys.getenv("R_CONFIG_ACTIVE"))
+message("MySQL_HOST from env: ", Sys.getenv("MySQL_HOST"))
+message("MySQL_USER from env: ", Sys.getenv("MySQL_USER"))
+message("MySQL_DB from env: ", Sys.getenv("MySQL_DB"))
+message("MySQL_PORT from env: ", Sys.getenv("MySQL_PORT"))
+
 env <- config::get()
 
 db <- env$MySQL_DB
+message("MySQL_DB from config: ", db)
+message("MySQL_HOST from config: ", env$MySQL_HOST)
+message("MySQL_PORT from config: ", env$MySQL_PORT)
 print(paste("from global: ", db))
 a0_info <- auth0::auth0_info()
 
@@ -69,11 +78,11 @@ a0_info <- auth0::auth0_info()
 
 pool <- dbPool(
   drv = RMySQL::MySQL(),
-  dbname = env$MySQL_DB,
-  host= env$MySQL_HOST,
-  port= as.integer(env$MySQL_PORT),
-  user= env$MySQL_USER,
-  password= env$MySQL_PASS,
+  dbname = Sys.getenv("MySQL_DB"),
+  host= Sys.getenv("MySQL_HOST"),
+  port= as.integer(Sys.getenv("MySQL_PORT")),
+  user= Sys.getenv("MySQL_USER"),
+  password= Sys.getenv("MySQL_PASS"),
   minSize = 1,
   idleTimeout = 60*60,
   # encoding = "UTF-8"
