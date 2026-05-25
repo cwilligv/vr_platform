@@ -47,7 +47,6 @@ RUN R -e 'install.packages(c(\
               "shinydisconnect", \
               "sendmailR", \
               "DBI", \
-              "gt", \
               "remotes", \
               "rmarkdown", \
               "kableExtra", \
@@ -67,6 +66,9 @@ RUN R -e 'install.packages("qrcode", repos="http://cran.rstudio.com", dependenci
 RUN R -e 'install.packages("RMySQL", repos="http://cran.rstudio.com", dependencies = TRUE)'
 RUN R -e 'install.packages("base64enc", repos="http://cran.rstudio.com", dependencies = TRUE)'
 RUN R -e 'install.packages("dotenv", repos="http://cran.rstudio.com")'
+RUN R -e 'install.packages("gt", repos="http://cran.rstudio.com")'
+RUN R -e 'install.packages("dbplyr", repos="http://cran.rstudio.com")'
+RUN R -e 'install.packages("waiter", repos="http://cran.rstudio.com")'
 RUN R -e 'require(devtools)'
 
 RUN R -e 'devtools::install_version("auth0", version = "0.2.1", dependencies = TRUE, repos = "http://cran.rstudio.com")'
