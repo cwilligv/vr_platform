@@ -1,0 +1,12 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.git
+.gitignore
+*.Rproj
+.env
+.env.local
+README.md
+deployment_instructions.md
+env_var_example.R

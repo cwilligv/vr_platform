@@ -1,6 +1,6 @@
 # Load environment variables
 # Only load .env file if not running on Cloud Run (K_SERVICE is set by Cloud Run)
-if (Sys.getenv("K_SERVICE") == "") {
+if (Sys.getenv("K_SERVICE") == "" && file.exists(".env")) {
   dotenv::load_dot_env()
 }
 # Set R_CONFIG_ACTIVE to prod (can be overridden by environment variable)
