@@ -41,7 +41,7 @@ library(knitr)
 library(openxlsx)
 library(bslib)
 library(rvest)
-library(shinyWidgets)
+# library(shinyWidgets)
 library(base64enc)
 
 # Get config based on R_CONFIG_ACTIVE environment variable
