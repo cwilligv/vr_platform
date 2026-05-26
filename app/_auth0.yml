@@ -1,7 +1,7 @@
 name: myApp
 remote_url: 'https://vr-platform-864314455801.us-central1.run.app'
 # remote_url: 'https://cwillig.shinyapps.io/capacitacion3d/'
-remote_url: ''
+# remote_url: ''
 auth0_config:
   api_url: !expr paste0('https://', Sys.getenv("AUTH0_USER"), '.auth0.com')
   credentials:
