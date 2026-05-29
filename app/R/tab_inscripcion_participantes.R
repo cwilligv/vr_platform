@@ -621,10 +621,14 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
             ) %>%
            select(-apellidos, -email_solicitante, -telefono_solicitante, -fecha_presencial, -nombre_empresa) %>%
            relocate(solicitante, .after = cargo) %>%
-           mutate(index = row_number()) %>% 
+           mutate(
+             index = row_number(),
+             escena = as.character(NA)
+           ) %>% 
+           relocate(escena, .before = urgencia) %>%
            relocate(index) 
          names(table) <- c("n", "Rut", "Participante","Cargo","Solicitante", "Fecha Solicitud",
-                           "Fecha Evaluación", "Urgencia")
+                           "Fecha Evaluación", "Escena", "Urgencia")
          table <- datatable(table, 
                             rownames = FALSE,
                             escape = FALSE,
@@ -632,10 +636,10 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                             selection = 'single',
                             options = list(searchHighlight = T, searching = T, scrollX = T, autoWidth = F, ordering = F,
                                            columnDefs = list(list(className = 'dt-center', targets = "_all"),
-                                                             list(targets = 7, visible = FALSE)),
+                                                             list(targets = 8, visible = FALSE)),
                                            language = list(url = 'https://cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')
                                            ),
-                            callback = JS(paste0("var tips = ['Index', 'Rut', 'Participante', 'Cargo', 'Contacto Solicitante', 'Fecha de Solicitud de Evaluación','Fecha Inicio de Evaluaciones','Urgencia'],
+                            callback = JS(paste0("var tips = ['Index', 'Rut', 'Participante', 'Cargo', 'Contacto Solicitante', 'Fecha de Solicitud de Evaluación','Fecha Inicio de Evaluaciones','Escena','Urgencia'],
                                           firstRow = $('#",session$ns('responses_table')," thead tr th');
                                           for (var i = 0; i < tips.length; i++) {
                                             $(firstRow[i]).attr('title', tips[i]);
