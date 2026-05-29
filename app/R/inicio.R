@@ -11,14 +11,14 @@ inicio_ui <- function(id) {
       width = 12,
       collapsible = F,
       headerBorder = F,
-      p("Resumen del estado de avance de capacitaciones correspondiente al PRESENTE MES."),
+      p("Resumen del estado de avance de evaluaciones correspondiente al PRESENTE MES."),
       fluidRow(
         bs4InfoBoxOutput(NS(id, "infobox_capacitaciones_terminadas"), width = 4),
         bs4InfoBoxOutput(NS(id, "infobox_agendamientos"), width = 4),
         bs4InfoBoxOutput(NS(id, "infobox_inasistencias"), width = 4)
       ),
       markdown("*****") %>% div(class = "sps-dash"),
-      p("Resumen ANUAL del estado de avance de capacitaciones."),
+      p("Resumen ANUAL del estado de avance de evaluados"),
       fluidRow(
         column(4),
         column(4,
@@ -125,9 +125,9 @@ inicio_server <- function(id, rv){
       # Info boxes
       
       output$infobox_capacitaciones_terminadas <- renderbs4InfoBox({
-        bs4InfoBox(title = h4("CAPACITACIONES"),
+        bs4InfoBox(title = h4("EVALUACIONES"),
                    value = h3(cap_terminandas()),
-                   subtitle = "Participantes capacitados",
+                   subtitle = "Participantes evaluados",
                    icon = icon("users"),
                    # width = 4,
                    color = "success",
@@ -159,7 +159,7 @@ inicio_server <- function(id, rv){
         month <- lubridate::month(lubridate::today(tzone = "Chile/Continental"))
         # year <- as.numeric(input$inicio_select_year)
         year <- as.numeric(lubridate::year(lubridate::today(tzone = "Chile/Continental")))
-        print(paste("capacitaciones: ",year, month, sep = "-"))
+        print(paste("evaluaciones: ",year, month, sep = "-"))
         
         # Filtro WHERE
         if (as.numeric(session$userData$id_empresa) == 0) {
