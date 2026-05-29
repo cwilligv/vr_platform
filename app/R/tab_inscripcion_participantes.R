@@ -102,8 +102,8 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
         if (session$userData$rol %in% c('admin')) {
           tagList(
             # actionButton(ns("edit_button"), "Editar", class = "btn-success", icon("edit")),
-            actionButton(ns("delete_button"), "Borrar", class = "btn-success", icon("trash-alt")),
-            actionButton(ns("carga_masiva"), "Carga masiva", class = "btn-success")
+            actionButton(ns("delete_button"), "Borrar", class = "btn-success", icon("trash-alt"))
+            # actionButton(ns("carga_masiva"), "Carga masiva", class = "btn-success")
             # selectInput("listado_empresas", "Clientes", choices = get_empresas(session$userData$rol, session$userData$email))
           )
         }
@@ -124,12 +124,12 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
       })
        # ================= BEGIN: INSCRIPCIONES =======================
        
-       #load responses_df and make reactive to inputs  
+       #load responses_df and make reactive to inputs
        responses_df <- reactive({
-         
+
          #make reactive to
          dataChangedTrigger()
-         input$btn_carga_masiva
+         # input$btn_carga_masiva
          rv$tab_inscripciones_clicked
          
          updateSelectInput(session, "listado_empresas", selected = as.numeric(session$userData$id_empresa))
@@ -166,12 +166,18 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                                 fecha_online = as.character(ifelse(!isTruthy(input$fecha_online), NA, as.character(input$fecha_online))),
                                 fecha_presencial = as.character(ifelse(!isTruthy(input$fecha_presencial), NA, as.character(input$fecha_presencial))),
                                 #date = as.character(format(Sys.Date(), format="%d-%m-%Y")),
-                                psicolaboral = if_else(1 %in% as.vector(input$checkBoxGroup), 1, 0),
-                                conductual = if_else(2 %in% as.vector(input$checkBoxGroup), 1, 0),
-                                conocimiento_seguridad = if_else(3 %in% as.vector(input$checkBoxGroup), 1, 0),
-                                vr = if_else(4 %in% as.vector(input$checkBoxGroup), 1, 0),
-                                tecnico_teorico = if_else(5 %in% as.vector(input$checkBoxGroup), 1, 0),
-                                gestion = if_else(6 %in% as.vector(input$checkBoxGroup), 1, 0),
+                                # psicolaboral = if_else(1 %in% as.vector(input$checkBoxGroup), 1, 0),
+                                # conductual = if_else(2 %in% as.vector(input$checkBoxGroup), 1, 0),
+                                # conocimiento_seguridad = if_else(3 %in% as.vector(input$checkBoxGroup), 1, 0),
+                                # vr = if_else(4 %in% as.vector(input$checkBoxGroup), 1, 0),
+                                # tecnico_teorico = if_else(5 %in% as.vector(input$checkBoxGroup), 1, 0),
+                                # gestion = if_else(6 %in% as.vector(input$checkBoxGroup), 1, 0),
+                                psicolaboral = 0,
+                                conductual = 0,
+                                conocimiento_seguridad = 0,
+                                vr = 0,
+                                tecnico_teorico = 0,
+                                gestion = 0,
                                 ingresado_por = session$userData$email,
                                 urgencia = input$tipo_solicitud,
                                 borrado = 0,
@@ -288,16 +294,16 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
          }
          return(NULL)  # NULL indicates validation passed
        })
-       iv$add_rule("fecha_online", function(value){
-         if ((length(value) == 0) && (length(input$fecha_presencial) == 0)) {
-           "Debe ingresar una fecha de inicio de Evaluaciones."
-         }
-       })
-       iv$add_rule("fecha_presencial", function(value){
-         if ((length(value) == 0) && (length(input$fecha_online) == 0)) {
-           "Debe ingresar al menos una fecha, online o presencial."
-         }
-       })
+       # iv$add_rule("fecha_online", function(value){
+       #   if ((length(value) == 0) && (length(input$fecha_presencial) == 0)) {
+       #     "Debe ingresar una fecha de inicio de Evaluaciones."
+       #   }
+       # })
+       # iv$add_rule("fecha_presencial", function(value){
+       #   if ((length(value) == 0) && (length(input$fecha_online) == 0)) {
+       #     "Debe ingresar al menos una fecha, online o presencial."
+       #   }
+       # })
        iv$add_rule("fecha_solicitud_urgente", function(value){
          
          if (!editing_on()) {
@@ -549,12 +555,18 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
          f_online <- ifelse(length(input$fecha_online) == 0, as.character(NA), as.character(input$fecha_online))
          f_presencial <- ifelse(length(input$fecha_presencial) == 0, as.character(NA), as.character(input$fecha_presencial))
          print(row_selection)
-         ps <- if_else(1 %in% as.vector(input$checkBoxGroup), 1, 0)
-         co <- if_else(2 %in% as.vector(input$checkBoxGroup), 1, 0)
-         cs <- if_else(3 %in% as.vector(input$checkBoxGroup), 1, 0)
-         vr <- if_else(4 %in% as.vector(input$checkBoxGroup), 1, 0)
-         tt <- if_else(5 %in% as.vector(input$checkBoxGroup), 1, 0)
-         ge <- if_else(6 %in% as.vector(input$checkBoxGroup), 1, 0)
+         # ps <- if_else(1 %in% as.vector(input$checkBoxGroup), 1, 0)
+         # co <- if_else(2 %in% as.vector(input$checkBoxGroup), 1, 0)
+         # cs <- if_else(3 %in% as.vector(input$checkBoxGroup), 1, 0)
+         # vr <- if_else(4 %in% as.vector(input$checkBoxGroup), 1, 0)
+         # tt <- if_else(5 %in% as.vector(input$checkBoxGroup), 1, 0)
+         # ge <- if_else(6 %in% as.vector(input$checkBoxGroup), 1, 0)
+         ps <- 0
+         co <- 0
+         cs <- 0
+         vr <- 0
+         tt <- 0
+         ge <- 0
          sqlq <- glue::glue_sql("UPDATE participantes set 
                                  rut = {input$rut},
                                  nombres = {input$nombres}, 
@@ -587,7 +599,8 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
        
        output$responses_table <- DT::renderDT({
          # table <- responses_df() %>% select(-c(id, id_empresa, fecha_solicitud, ingresado_por, borrado, fecha_borrado, borrado_por)) %>% 
-         table <- responses_df() %>% select(-id, -id_empresa, -email, -telefono) %>% 
+         # browser()
+         table <- responses_df() %>% select(-id, -id_empresa, -email, -telefono, -centro_de_costo, -psicolaboral, -conductual, -conocimiento_seguridad, -vr, -tecnico_teorico, -gestion) %>% 
            mutate(nombres = paste0("<strong>", str_to_title(nombres), "</strong>", "<br>", "<i>", str_to_title(apellidos), "</i>"),
                   #apellidos = str_to_title(apellidos),
                   solicitante = paste0("<strong>", str_to_lower(email_solicitante), "</strong>", "<br>", "<i>", telefono_solicitante, "</i>"),
@@ -599,18 +612,23 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                   # fecha_solicitud = format(as.Date(fecha_solicitud), format = "%d-%m-%y"),
                   fecha_online = format(as.Date(fecha_online), format = "%d-%m-%y"),
                   # fecha_presencial = format(as.Date(fecha_presencial), format = "%d-%m-%y"),
-                  psicolaboral = if_else(psicolaboral == '1', as.character(icon("ok", lib = "glyphicon", style = "color:blue;")), as.character("")),
-                  conductual = if_else(conductual == '1', as.character(icon("ok", lib = "glyphicon", style = "color:blue;")), as.character("")),
-                  conocimiento_seguridad = if_else(conocimiento_seguridad == 1, as.character(icon("ok", lib = "glyphicon", style = "color:blue;")), as.character("")),
-                  vr = if_else(vr == '1', as.character(icon("ok", lib = "glyphicon", style = "color:blue;")), as.character("")),
-                  tecnico_teorico = if_else(tecnico_teorico == '1', as.character(icon("ok", lib = "glyphicon", style = "color:blue;")), as.character("")),
-                  gestion = if_else(gestion == '1', as.character(icon("ok", lib = "glyphicon", style = "color:blue;")), as.character(""))) %>%
+                  # psicolaboral = if_else(psicolaboral == '1', as.character(icon("ok", lib = "glyphicon", style = "color:blue;")), as.character("")),
+                  # conductual = if_else(conductual == '1', as.character(icon("ok", lib = "glyphicon", style = "color:blue;")), as.character("")),
+                  # conocimiento_seguridad = if_else(conocimiento_seguridad == 1, as.character(icon("ok", lib = "glyphicon", style = "color:blue;")), as.character("")),
+                  # vr = if_else(vr == '1', as.character(icon("ok", lib = "glyphicon", style = "color:blue;")), as.character("")),
+                  # tecnico_teorico = if_else(tecnico_teorico == '1', as.character(icon("ok", lib = "glyphicon", style = "color:blue;")), as.character("")),
+                  # gestion = if_else(gestion == '1', as.character(icon("ok", lib = "glyphicon", style = "color:blue;")), as.character(""))
+            ) %>%
            select(-apellidos, -email_solicitante, -telefono_solicitante, -fecha_presencial, -nombre_empresa) %>%
-           relocate(solicitante, .after = nombres) %>%
-           mutate(index = row_number()) %>% 
+           relocate(solicitante, .after = cargo) %>%
+           mutate(
+             index = row_number(),
+             escena = as.character(NA)
+           ) %>% 
+           relocate(escena, .before = urgencia) %>%
            relocate(index) 
-         names(table) <- c("n", "Rut", "Participante","Solicitante","Contrato/Proyecto","Cargo", "Fecha Solicitud",
-                           "Fecha Inicio<br>Evaluaciones", "PS", "CO", "CS", "VR", "TT", "GE","Urgencia")
+         names(table) <- c("n", "Rut", "Participante","Cargo","Solicitante", "Fecha Solicitud",
+                           "Fecha Evaluación", "Escena", "Urgencia")
          table <- datatable(table, 
                             rownames = FALSE,
                             escape = FALSE,
@@ -618,10 +636,10 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                             selection = 'single',
                             options = list(searchHighlight = T, searching = T, scrollX = T, autoWidth = F, ordering = F,
                                            columnDefs = list(list(className = 'dt-center', targets = "_all"),
-                                                             list(targets = 14, visible = FALSE)),
+                                                             list(targets = 8, visible = FALSE)),
                                            language = list(url = 'https://cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')
                                            ),
-                            callback = JS(paste0("var tips = ['Index', 'Rut', 'Participante', 'Contacto Solicitante', 'Contrato/Proyecto', 'Cargo', 'Fecha de Solicitud de Capacitación','Fecha Inicio de Evaluaciones', 'Psicolaboral', 'Conductual', 'Conocimiento Seguridad', 'Identificación de Riesgos', 'Técnico Teórico', 'Gestión','Urgencia'],
+                            callback = JS(paste0("var tips = ['Index', 'Rut', 'Participante', 'Cargo', 'Contacto Solicitante', 'Fecha de Solicitud de Evaluación','Fecha Inicio de Evaluaciones','Escena','Urgencia'],
                                           firstRow = $('#",session$ns('responses_table')," thead tr th');
                                           for (var i = 0; i < tips.length; i++) {
                                             $(firstRow[i]).attr('title', tips[i]);
@@ -715,17 +733,11 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                             column(6, textInput(ns("email"), labelMandatory("Email"), placeholder = ""))),
                    fluidRow(column(6, selectInput(ns("centrocosto"), "Contrato/Proyecto", choices = NULL)),
                             column(6, textInput(ns("cargo"), labelMandatory("Cargo"), placeholder = ""))),
-                   # fluidRow(
-                   #   h4("Fechas Evaluación"),
-                   #   br(),
-                   #   p("Indique una o ambas, según evaluaciones a rendir."),
+                   # h4("Fechas Evaluación"),
+                   # p("Indique la fecha que comenzará a rendir las evaluaciones."),
+                   # fluidRow(column(6, dateInput(ns("fecha_online"), "Fecha de Inicio", language = "es", weekstart = 1, autoclose = T, value = NA, datesdisabled = restricted_dates)),
+                   #          column(6, shinyjs::hidden(dateInput(ns("fecha_presencial"), "Fecha presencial", language = "es", weekstart = 1, autoclose = T, value = NA)))#, datesdisabled = restricted_dates))),
                    # ),
-                   h4("Fechas Evaluación"),
-                   # p("Indique una o ambas, según evaluaciones a rendir."),
-                   p("Indique la fecha que comenzará a rendir las evaluaciones."),
-                   fluidRow(column(6, dateInput(ns("fecha_online"), "Fecha de Inicio", language = "es", weekstart = 1, autoclose = T, value = NA, datesdisabled = restricted_dates)),
-                            column(6, shinyjs::hidden(dateInput(ns("fecha_presencial"), "Fecha presencial", language = "es", weekstart = 1, autoclose = T, value = NA)))#, datesdisabled = restricted_dates))),
-                   ),
                    br(),
                    fluidRow(
                      column(4),
@@ -735,7 +747,7 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                  ),
                  tabPanel(
                    title = "Evaluaciones",
-                   h4("Capacitación"),
+                   h4("Evaluaciones"),
                    br(),
                    p(
                      style="text-align: justify;",
@@ -930,7 +942,8 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
          ns <- session$ns
          iv$enable()
          req(iv$is_valid())
-         updateTabsetPanel(session, "inTabset",selected = "Evaluaciones")
+         # updateTabsetPanel(session, "inTabset",selected = "Evaluaciones")
+         updateTabsetPanel(session, "inTabset",selected = "Agendamiento")
          
          v$checkgroupUIDone <- TRUE
        })
@@ -941,25 +954,26 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
        
        observeEvent(input$tab_evaluaciones_forward_btn , {
          
-         output$checkgroup_error_msg <- renderText({
-           shiny::validate(
-             shiny::need(length(input$checkBoxGroup) > 0, "Seleccione al menos una subdimensión a capacitar.")
-           )
-         })
-         
-         shiny::req(length(input$checkBoxGroup) > 0)
-         updateTabsetPanel(session, "inTabset",selected = "Agendamiento")
-         message(paste0("Fecha online: ", input$fecha_online))
-         message(paste0("Fecha presencial: ", input$fecha_presencial))
-         fecha_posible <- seleccion_fecha_prep(input$fecha_online, input$fecha_presencial)
-         updateTextInput(session, "fecha_prep_autom", value = fecha_posible$fecha)
-         updateTextInput(session, "hora_prep_autom", value = fecha_posible$horario)
-         print(paste0("Fecha posible: ", fecha_posible$fecha, " ", fecha_posible$horario))
-         editing_on(FALSE)
+         # output$checkgroup_error_msg <- renderText({
+         #   shiny::validate(
+         #     shiny::need(length(input$checkBoxGroup) > 0, "Seleccione al menos una subdimensión a capacitar.")
+         #   )
+         # })
+         # 
+         # shiny::req(length(input$checkBoxGroup) > 0)
+         # updateTabsetPanel(session, "inTabset",selected = "Agendamiento")
+         # message(paste0("Fecha online: ", input$fecha_online))
+         # message(paste0("Fecha presencial: ", input$fecha_presencial))
+         # fecha_posible <- seleccion_fecha_prep(input$fecha_online, input$fecha_presencial)
+         # updateTextInput(session, "fecha_prep_autom", value = fecha_posible$fecha)
+         # updateTextInput(session, "hora_prep_autom", value = fecha_posible$horario)
+         # print(paste0("Fecha posible: ", fecha_posible$fecha, " ", fecha_posible$horario))
+         # editing_on(FALSE)
        })
        
        observeEvent(input$tab_agendamiento_back_btn , {
-         updateTabsetPanel(session, "inTabset",selected = "Evaluaciones")
+         # updateTabsetPanel(session, "inTabset",selected = "Evaluaciones")
+         updateTabsetPanel(session, "inTabset",selected = "Participante")
        })
        
        observeEvent(input$tab_agendamiento_forward_btn , {
@@ -971,7 +985,7 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
        })
        
        is_valid_urgent_date <- reactive({
-         if (input$tipo_solicitud == 1) {
+         if (length(input$tipo_solicitud) > 0 && input$tipo_solicitud == 1) {
            !is.na(input$fecha_solicitud_urgente) && !(ymd(input$fecha_solicitud_urgente) < lubridate::today(tzone = "Chile/Continental"))
          } else {
            TRUE
@@ -986,96 +1000,98 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                          (input$telefono != "" | is.null(input$telefono)) && 
                          (input$email != "" | is.null(input$email)) &&
                          (input$cargo != "" | is.null(input$cargo)) &&
-                         (length(input$checkBoxGroup) > 0) && 
+                         # (length(input$checkBoxGroup) > 0) &&
                          (is_valid_urgent_date()))
          }
        })
        
        # ================= END: INSCRIPCIONES =======================
-       
-       observeEvent(input$carga_masiva, {
-         carga_masiva_form("btn_carga_masiva")
-         print(getwd())
-       })
-       
-       carga_masiva_form <- function(button_id){
-         ns <- session$ns
-         showModal(modalDialog(
-           fluidPage(
-             fluidRow(downloadLink(ns("download_template"), "Descargue plantilla de carga")),
-             fluidRow(fileInput(ns("archivo_carga_masiva"), "Seleccione archivo", accept = ".xlsx", buttonLabel = 'Seleccionar archivo', placeholder = 'ningún archivo')),
-             fluidRow(textOutput(ns("archivo_carga_audit")))
-           ),
-           tags$div(id = session$ns("constraintPlaceholder")),
-           title = "Carga masiva de participantes",
-           footer = tagList(
-             modalButton("Cancelar"),
-             actionButton(ns(button_id), "Cargar")
-           ),
-           easyClose = TRUE
-         ))
-       }
-       
-       # logica para descargar plantilla de carga
-       output$download_template <- downloadHandler(
-         filename = function() {
-           paste("c3d_plantilla_carga", "xlsx", sep=".")
-         },
-         content = function(file) {
-           file.copy("www/resources/c3d_plantilla_carga.xlsx", file)
-         },
-         contentType = "application/zip"
-       )
-       
-       # logica que ejecuta la carga masiva de datos a la base de datos
-       observeEvent(input$btn_carga_masiva, {
-         print("cargando archivo masivo...")
-         if (is.null(input$archivo_carga_masiva)) {
-           showModal(modalDialog(
-             title = "Mensaje Importante",
-             "Nada que procesar. Debes cargar un archivo a procesar"
-           ))
-         }else{
-           Data<-input$archivo_carga_masiva$datapath
-           #Name<-input$filename
-           file <- read_xlsx(Data, sheet = "participantes",
-                             col_types = c('text','text','text','numeric','text','text','text','date','date','text','text','text','text','text','text')) %>% 
-             clean_names() %>% 
-             mutate_at(10:15, ~replace_na(.,'0')) %>%
-             mutate(#id = paste0(1,rut,cargo),
-                    id_empresa = as.numeric(session$userData$id_empresa),
-                    fecha_solicitud = as.character(today(tzone = "Chile/Continental")),
-                    psicolaboral = if_else(psicolaboral == "x", '1', '0'),
-                    conductual = if_else(conductual == "x", '1', '0'),
-                    conocimiento_seguridad = if_else(conocimiento_seguridad == "x", '1', '0'),
-                    identificacion_de_riesgos = if_else(identificacion_de_riesgos == "x", '1', '0'),
-                    tecnico_teorico = if_else(tecnico_teorico == "x", '1', '0'),
-                    gestion = if_else(gestion == "x", '1', '0'),
-                    ingresado_por = session$userData$email,
-                    urgencia = 0,
-                    borrado = 0,
-                    fecha_borrado = NA,
-                    borrado_por = NA
-             ) %>%
-             rename(email = correo,
-                    vr = identificacion_de_riesgos) %>% 
-             relocate(id_empresa) %>% 
-             relocate(fecha_solicitud, .after = cargo)
-           appendData(file)
-           print(file)
-           showNotification("Participante(s) inscrito(s).", type = "message")
-           # showNotification("Enviando correos....", type = "message")
-           # for (i in 1:nrow(file)) {
-           #   cita <- obtener_fecha_hora_cita(session$userData$id_empresa, file[i,]$rut, Sys.Date())
-           #   envio_email_participante(cita, file[i,]$email, file[i,]$nombres)
-           # }
-           # 
-           # envio_email_solicitante(cita, session$userData$email,session$userData$nombre, trimws(strsplit(input$emails_a_notificar, ",")[[1]]), paste(input$nombres, input$apellidos))
-           # showNotification("Email de notificacion y confirmacion enviado.", type = "message")
-           dataChangedTrigger(dataChangedTrigger() + 1)
-           removeModal()
-         }
-       })
+
+       # ================= BEGIN: CARGA MASIVA (COMMENTED OUT) =======================
+       # observeEvent(input$carga_masiva, {
+       #   carga_masiva_form("btn_carga_masiva")
+       #   print(getwd())
+       # })
+       #
+       # carga_masiva_form <- function(button_id){
+       #   ns <- session$ns
+       #   showModal(modalDialog(
+       #     fluidPage(
+       #       fluidRow(downloadLink(ns("download_template"), "Descargue plantilla de carga")),
+       #       fluidRow(fileInput(ns("archivo_carga_masiva"), "Seleccione archivo", accept = ".xlsx", buttonLabel = 'Seleccionar archivo', placeholder = 'ningún archivo')),
+       #       fluidRow(textOutput(ns("archivo_carga_audit")))
+       #     ),
+       #     tags$div(id = session$ns("constraintPlaceholder")),
+       #     title = "Carga masiva de participantes",
+       #     footer = tagList(
+       #       modalButton("Cancelar"),
+       #       actionButton(ns(button_id), "Cargar")
+       #     ),
+       #     easyClose = TRUE
+       #   ))
+       # }
+       #
+       # # logica para descargar plantilla de carga
+       # output$download_template <- downloadHandler(
+       #   filename = function() {
+       #     paste("c3d_plantilla_carga", "xlsx", sep=".")
+       #   },
+       #   content = function(file) {
+       #     file.copy("www/resources/c3d_plantilla_carga.xlsx", file)
+       #   },
+       #   contentType = "application/zip"
+       # )
+       #
+       # # logica que ejecuta la carga masiva de datos a la base de datos
+       # observeEvent(input$btn_carga_masiva, {
+       #   print("cargando archivo masivo...")
+       #   if (is.null(input$archivo_carga_masiva)) {
+       #     showModal(modalDialog(
+       #       title = "Mensaje Importante",
+       #       "Nada que procesar. Debes cargar un archivo a procesar"
+       #     ))
+       #   }else{
+       #     Data<-input$archivo_carga_masiva$datapath
+       #     #Name<-input$filename
+       #     file <- read_xlsx(Data, sheet = "participantes",
+       #                       col_types = c('text','text','text','numeric','text','text','text','date','date','text','text','text','text','text','text')) %>%
+       #       clean_names() %>%
+       #       mutate_at(10:15, ~replace_na(.,'0')) %>%
+       #       mutate(#id = paste0(1,rut,cargo),
+       #              id_empresa = as.numeric(session$userData$id_empresa),
+       #              fecha_solicitud = as.character(today(tzone = "Chile/Continental")),
+       #              psicolaboral = if_else(psicolaboral == "x", '1', '0'),
+       #              conductual = if_else(conductual == "x", '1', '0'),
+       #              conocimiento_seguridad = if_else(conocimiento_seguridad == "x", '1', '0'),
+       #              identificacion_de_riesgos = if_else(identificacion_de_riesgos == "x", '1', '0'),
+       #              tecnico_teorico = if_else(tecnico_teorico == "x", '1', '0'),
+       #              gestion = if_else(gestion == "x", '1', '0'),
+       #              ingresado_por = session$userData$email,
+       #              urgencia = 0,
+       #              borrado = 0,
+       #              fecha_borrado = NA,
+       #              borrado_por = NA
+       #       ) %>%
+       #       rename(email = correo,
+       #              vr = identificacion_de_riesgos) %>%
+       #       relocate(id_empresa) %>%
+       #       relocate(fecha_solicitud, .after = cargo)
+       #     appendData(file)
+       #     print(file)
+       #     showNotification("Participante(s) inscrito(s).", type = "message")
+       #     # showNotification("Enviando correos....", type = "message")
+       #     # for (i in 1:nrow(file)) {
+       #     #   cita <- obtener_fecha_hora_cita(session$userData$id_empresa, file[i,]$rut, Sys.Date())
+       #     #   envio_email_participante(cita, file[i,]$email, file[i,]$nombres)
+       #     # }
+       #     #
+       #     # envio_email_solicitante(cita, session$userData$email,session$userData$nombre, trimws(strsplit(input$emails_a_notificar, ",")[[1]]), paste(input$nombres, input$apellidos))
+       #     # showNotification("Email de notificacion y confirmacion enviado.", type = "message")
+       #     dataChangedTrigger(dataChangedTrigger() + 1)
+       #     removeModal()
+       #   }
+       # })
+       # ================= END: CARGA MASIVA (COMMENTED OUT) =======================
        }
     
   )
