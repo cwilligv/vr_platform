@@ -102,8 +102,8 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
         if (session$userData$rol %in% c('admin')) {
           tagList(
             # actionButton(ns("edit_button"), "Editar", class = "btn-success", icon("edit")),
-            actionButton(ns("delete_button"), "Borrar", class = "btn-success", icon("trash-alt")),
-            actionButton(ns("carga_masiva"), "Carga masiva", class = "btn-success")
+            actionButton(ns("delete_button"), "Borrar", class = "btn-success", icon("trash-alt"))
+            # actionButton(ns("carga_masiva"), "Carga masiva", class = "btn-success")
             # selectInput("listado_empresas", "Clientes", choices = get_empresas(session$userData$rol, session$userData$email))
           )
         }
@@ -124,12 +124,12 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
       })
        # ================= BEGIN: INSCRIPCIONES =======================
        
-       #load responses_df and make reactive to inputs  
+       #load responses_df and make reactive to inputs
        responses_df <- reactive({
-         
+
          #make reactive to
          dataChangedTrigger()
-         input$btn_carga_masiva
+         # input$btn_carga_masiva
          rv$tab_inscripciones_clicked
          
          updateSelectInput(session, "listado_empresas", selected = as.numeric(session$userData$id_empresa))
@@ -992,90 +992,92 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
        })
        
        # ================= END: INSCRIPCIONES =======================
-       
-       observeEvent(input$carga_masiva, {
-         carga_masiva_form("btn_carga_masiva")
-         print(getwd())
-       })
-       
-       carga_masiva_form <- function(button_id){
-         ns <- session$ns
-         showModal(modalDialog(
-           fluidPage(
-             fluidRow(downloadLink(ns("download_template"), "Descargue plantilla de carga")),
-             fluidRow(fileInput(ns("archivo_carga_masiva"), "Seleccione archivo", accept = ".xlsx", buttonLabel = 'Seleccionar archivo', placeholder = 'ningún archivo')),
-             fluidRow(textOutput(ns("archivo_carga_audit")))
-           ),
-           tags$div(id = session$ns("constraintPlaceholder")),
-           title = "Carga masiva de participantes",
-           footer = tagList(
-             modalButton("Cancelar"),
-             actionButton(ns(button_id), "Cargar")
-           ),
-           easyClose = TRUE
-         ))
-       }
-       
-       # logica para descargar plantilla de carga
-       output$download_template <- downloadHandler(
-         filename = function() {
-           paste("c3d_plantilla_carga", "xlsx", sep=".")
-         },
-         content = function(file) {
-           file.copy("www/resources/c3d_plantilla_carga.xlsx", file)
-         },
-         contentType = "application/zip"
-       )
-       
-       # logica que ejecuta la carga masiva de datos a la base de datos
-       observeEvent(input$btn_carga_masiva, {
-         print("cargando archivo masivo...")
-         if (is.null(input$archivo_carga_masiva)) {
-           showModal(modalDialog(
-             title = "Mensaje Importante",
-             "Nada que procesar. Debes cargar un archivo a procesar"
-           ))
-         }else{
-           Data<-input$archivo_carga_masiva$datapath
-           #Name<-input$filename
-           file <- read_xlsx(Data, sheet = "participantes",
-                             col_types = c('text','text','text','numeric','text','text','text','date','date','text','text','text','text','text','text')) %>% 
-             clean_names() %>% 
-             mutate_at(10:15, ~replace_na(.,'0')) %>%
-             mutate(#id = paste0(1,rut,cargo),
-                    id_empresa = as.numeric(session$userData$id_empresa),
-                    fecha_solicitud = as.character(today(tzone = "Chile/Continental")),
-                    psicolaboral = if_else(psicolaboral == "x", '1', '0'),
-                    conductual = if_else(conductual == "x", '1', '0'),
-                    conocimiento_seguridad = if_else(conocimiento_seguridad == "x", '1', '0'),
-                    identificacion_de_riesgos = if_else(identificacion_de_riesgos == "x", '1', '0'),
-                    tecnico_teorico = if_else(tecnico_teorico == "x", '1', '0'),
-                    gestion = if_else(gestion == "x", '1', '0'),
-                    ingresado_por = session$userData$email,
-                    urgencia = 0,
-                    borrado = 0,
-                    fecha_borrado = NA,
-                    borrado_por = NA
-             ) %>%
-             rename(email = correo,
-                    vr = identificacion_de_riesgos) %>% 
-             relocate(id_empresa) %>% 
-             relocate(fecha_solicitud, .after = cargo)
-           appendData(file)
-           print(file)
-           showNotification("Participante(s) inscrito(s).", type = "message")
-           # showNotification("Enviando correos....", type = "message")
-           # for (i in 1:nrow(file)) {
-           #   cita <- obtener_fecha_hora_cita(session$userData$id_empresa, file[i,]$rut, Sys.Date())
-           #   envio_email_participante(cita, file[i,]$email, file[i,]$nombres)
-           # }
-           # 
-           # envio_email_solicitante(cita, session$userData$email,session$userData$nombre, trimws(strsplit(input$emails_a_notificar, ",")[[1]]), paste(input$nombres, input$apellidos))
-           # showNotification("Email de notificacion y confirmacion enviado.", type = "message")
-           dataChangedTrigger(dataChangedTrigger() + 1)
-           removeModal()
-         }
-       })
+
+       # ================= BEGIN: CARGA MASIVA (COMMENTED OUT) =======================
+       # observeEvent(input$carga_masiva, {
+       #   carga_masiva_form("btn_carga_masiva")
+       #   print(getwd())
+       # })
+       #
+       # carga_masiva_form <- function(button_id){
+       #   ns <- session$ns
+       #   showModal(modalDialog(
+       #     fluidPage(
+       #       fluidRow(downloadLink(ns("download_template"), "Descargue plantilla de carga")),
+       #       fluidRow(fileInput(ns("archivo_carga_masiva"), "Seleccione archivo", accept = ".xlsx", buttonLabel = 'Seleccionar archivo', placeholder = 'ningún archivo')),
+       #       fluidRow(textOutput(ns("archivo_carga_audit")))
+       #     ),
+       #     tags$div(id = session$ns("constraintPlaceholder")),
+       #     title = "Carga masiva de participantes",
+       #     footer = tagList(
+       #       modalButton("Cancelar"),
+       #       actionButton(ns(button_id), "Cargar")
+       #     ),
+       #     easyClose = TRUE
+       #   ))
+       # }
+       #
+       # # logica para descargar plantilla de carga
+       # output$download_template <- downloadHandler(
+       #   filename = function() {
+       #     paste("c3d_plantilla_carga", "xlsx", sep=".")
+       #   },
+       #   content = function(file) {
+       #     file.copy("www/resources/c3d_plantilla_carga.xlsx", file)
+       #   },
+       #   contentType = "application/zip"
+       # )
+       #
+       # # logica que ejecuta la carga masiva de datos a la base de datos
+       # observeEvent(input$btn_carga_masiva, {
+       #   print("cargando archivo masivo...")
+       #   if (is.null(input$archivo_carga_masiva)) {
+       #     showModal(modalDialog(
+       #       title = "Mensaje Importante",
+       #       "Nada que procesar. Debes cargar un archivo a procesar"
+       #     ))
+       #   }else{
+       #     Data<-input$archivo_carga_masiva$datapath
+       #     #Name<-input$filename
+       #     file <- read_xlsx(Data, sheet = "participantes",
+       #                       col_types = c('text','text','text','numeric','text','text','text','date','date','text','text','text','text','text','text')) %>%
+       #       clean_names() %>%
+       #       mutate_at(10:15, ~replace_na(.,'0')) %>%
+       #       mutate(#id = paste0(1,rut,cargo),
+       #              id_empresa = as.numeric(session$userData$id_empresa),
+       #              fecha_solicitud = as.character(today(tzone = "Chile/Continental")),
+       #              psicolaboral = if_else(psicolaboral == "x", '1', '0'),
+       #              conductual = if_else(conductual == "x", '1', '0'),
+       #              conocimiento_seguridad = if_else(conocimiento_seguridad == "x", '1', '0'),
+       #              identificacion_de_riesgos = if_else(identificacion_de_riesgos == "x", '1', '0'),
+       #              tecnico_teorico = if_else(tecnico_teorico == "x", '1', '0'),
+       #              gestion = if_else(gestion == "x", '1', '0'),
+       #              ingresado_por = session$userData$email,
+       #              urgencia = 0,
+       #              borrado = 0,
+       #              fecha_borrado = NA,
+       #              borrado_por = NA
+       #       ) %>%
+       #       rename(email = correo,
+       #              vr = identificacion_de_riesgos) %>%
+       #       relocate(id_empresa) %>%
+       #       relocate(fecha_solicitud, .after = cargo)
+       #     appendData(file)
+       #     print(file)
+       #     showNotification("Participante(s) inscrito(s).", type = "message")
+       #     # showNotification("Enviando correos....", type = "message")
+       #     # for (i in 1:nrow(file)) {
+       #     #   cita <- obtener_fecha_hora_cita(session$userData$id_empresa, file[i,]$rut, Sys.Date())
+       #     #   envio_email_participante(cita, file[i,]$email, file[i,]$nombres)
+       #     # }
+       #     #
+       #     # envio_email_solicitante(cita, session$userData$email,session$userData$nombre, trimws(strsplit(input$emails_a_notificar, ",")[[1]]), paste(input$nombres, input$apellidos))
+       #     # showNotification("Email de notificacion y confirmacion enviado.", type = "message")
+       #     dataChangedTrigger(dataChangedTrigger() + 1)
+       #     removeModal()
+       #   }
+       # })
+       # ================= END: CARGA MASIVA (COMMENTED OUT) =======================
        }
     
   )
