@@ -677,7 +677,7 @@ check_user_inactivity <- function(email_usuario) {
   }
   
   # Check if more than 6 months have passed since last login
-  six_months_ago <- lubridate::now(tzone = "Chile/Continental") - months(num_meses_inactividad)
+  six_months_ago <- lubridate::now(tzone = "Chile/Continental") %m-% base::months(as.integer(num_meses_inactividad))
   is_inactive <- as.POSIXct(ultimo_login) < six_months_ago
   
   return(list(is_inactive = is_inactive, flag_inactivo = flag_inactivo))
