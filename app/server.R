@@ -342,18 +342,18 @@ server = function(input, output, session) {
   })
   
   output$menu_monitor <- renderMenu({
-    if (user()$bloqueado) {
-      return(NULL)
-    } else {
-      if (!(user()$rol %in% c('administrativo'))) {
-        print("Desplegando menu monitor")
-        menuItem(
-          text = "Seguimiento",
-          tabName = "tab3_seguimiento",
-          icon = icon("binoculars", lib = "font-awesome")
-        )
-      }
-    }
+    # if (user()$bloqueado) {
+    #   return(NULL)
+    # } else {
+    #   if (!(user()$rol %in% c('administrativo'))) {
+    #     print("Desplegando menu monitor")
+    #     menuItem(
+    #       text = "Seguimiento",
+    #       tabName = "tab3_seguimiento",
+    #       icon = icon("binoculars", lib = "font-awesome")
+    #     )
+    #   }
+    # }
   })
   
   output$menu_satisfaccion <- renderMenu({
@@ -388,18 +388,18 @@ server = function(input, output, session) {
   })
   
   output$menu_herramientas <- renderMenu({
-    if (user()$bloqueado) {
-      return(NULL)
-    } else {
-      if (user()$rol %in% c('admin', 'cliente_jefatura')) {
-        print("Desplegando menu herramientas")
-        menuItem(
-          text = "Herramientas",
-          tabName = "tab_herramientas",
-          icon = icon("tools", lib = "font-awesome")
-        )
-      }
-    }
+    # if (user()$bloqueado) {
+    #   return(NULL)
+    # } else {
+    #   if (user()$rol %in% c('admin', 'cliente_jefatura')) {
+    #     print("Desplegando menu herramientas")
+    #     menuItem(
+    #       text = "Herramientas",
+    #       tabName = "tab_herramientas",
+    #       icon = icon("tools", lib = "font-awesome")
+    #     )
+    #   }
+    # }
   })
   
   # output$menu_resultados <- renderMenu({
