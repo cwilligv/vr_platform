@@ -1,58 +1,11 @@
 registro_resultados_ui <- function(id){
   tagList(
-    # tabName = "tab4",
-    # h1("Registro de resultados", style = "font-size: 1.8rem;"),
-    # bs4Dash::box(
-    #   title = h1("Registro de resultados", style = "font-size: 1.8rem;"),
-    #   width = 12,
-    #   headerBorder = F,
-    #   collapsible = F,
-    #   fluidRow(
-    #     column(
-    #       width = 2,
-    #       # actionButton(NS(id, "gc_agregar"), "Agregar Cliente", class = "btn-success", style = "color: #fff;", icon = shiny::icon("user-plus"))
-    #       # actionButton(NS(id, "res_editar"), "Editar", class = "btn-success", icon = shiny::icon("edit")),
-    #       # actionButton(NS(id, "res_carga_masiva"), "Cargar resultados", class = "btn-success"),
-    #       uiOutput(NS(id,"buttons"), inline = T)
-    #       #textOutput(NS(id, "fecha_ultima_actualizacion")),
-    #       # actionButton(NS(id, "res_refresh"), "Borrar", class = "btn-success", icon("trash-alt"))
-    #       # HTML("Sube el archivo que contiene la lista de resultados para desplegar un resumen visual. La plantilla que sugerimos esta disponible para descarga")
-    #     ),
-    #     column(
-    #       width = 6,
-    #       div(textOutput(NS(id, "fecha_ultima_actualizacion")), style = "padding:5px;")
-    #       # br(),
-    #       # actionButton(NS(id, "instructivo_0"), "Instrucciones de descarga archivo CEIM", icon = icon("info-circle"), class = "btn-success")
-    #       # HTML("Sube el archivo que contiene la lista de resultados para desplegar un resumen visual. La plantilla que seguimos esta disponible para descarga")
-    #     ),
-    #     column(
-    #       width = 4,
-    #       uiOutput(NS(id, "admin_selector"))
-    #     )
-    #   ),
-    #   br(),
-    #   fluidRow(
-    #     column(
-    #       width = 12,
-    #       align = "center",
-    #       style = "z-index: 10",
-    #       div(DT::DTOutput(NS(id, "resultados_table")) %>% shinycssloaders::withSpinner(type = 8, proxy.height = "300px"), style = "font-size:75%")
-    #     )
-    #   )
-    # )
     br(),
     h1("Registro de resultados", style = "font-size: 1.8rem;"),
     fluidRow(
       column(
         width = 3,
-        # actionButton(NS(id, "gc_agregar"), "Agregar Cliente", class = "btn-success", style = "color: #fff;", icon = shiny::icon("user-plus"))
-        # actionButton(NS(id, "res_editar"), "Editar", class = "btn-success", icon = shiny::icon("edit")),
-        # actionButton(NS(id, "res_carga_masiva"), "Cargar resultados", class = "btn-success"),
-        # uiOutput(NS(id,"buttons"), inline = T)
         div(textOutput(NS(id, "fecha_ultima_actualizacion")), style = "padding:5px;")
-        #textOutput(NS(id, "fecha_ultima_actualizacion")),
-        # actionButton(NS(id, "res_refresh"), "Borrar", class = "btn-success", icon("trash-alt"))
-        # HTML("Sube el archivo que contiene la lista de resultados para desplegar un resumen visual. La plantilla que sugerimos esta disponible para descarga")
       ),
       column(
         width = 5,
@@ -228,24 +181,30 @@ registro_resultados_server <- function(id, rv, file_loader){
                  -fecha_carga_datos, -fecha_vencimiento_3d, -psicolaboral_categoria, -vr_categoria, -conductas_de_riesgo_categoria,
                  -conocimientos_en_seguridad_categoria, -tecnica_teorica_categoria, -tecnica_practica_categoria, -gestion_categoria, -perfil_3d,
                  -dim_seguridad, -dim_seguridad_categoria, -dim_psicolaboral, -dim_psicolaboral_fecha, -dim_psicolaboral_categoria, -dim_tecnica, 
-                 -dim_tecnica_categoria, -estado_vigente_vencido, -estado_evaluacion_3d, -updated_by) %>% 
+                 -dim_tecnica_categoria, -estado_vigente_vencido, -estado_evaluacion_3d, -updated_by,
+                 -tecnica_teorica, -tecnica_practica, -gestion, -certificacion, -resultado_final_3d) %>% 
           mutate(nombres = paste0("<strong>", str_to_title(nombres), "</strong>", "<br>", "<i>", str_to_title(apellidos), "</i>"),
                  n = row_number(),
                  fecha_de_ultima_evaluacion  = format(as.Date(fecha_de_ultima_evaluacion ), format = "%d-%m-%y"),
                  vr = if_else(is.na(vr), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(vr)),
-                 tecnica_teorica = if_else(is.na(tecnica_teorica), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(tecnica_teorica)),
-                 tecnica_practica = if_else(is.na(tecnica_practica), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(tecnica_practica)),
-                 gestion = if_else(is.na(gestion), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(gestion)),
-                 certificacion = if_else(is.na(certificacion), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(certificacion)),
+                 fecha_vencimiento = as.character(NA),
+                 informe = as.character(NA),
+                 # tecnica_teorica = if_else(is.na(tecnica_teorica), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(tecnica_teorica)),
+                 # tecnica_practica = if_else(is.na(tecnica_practica), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(tecnica_practica)),
+                 # gestion = if_else(is.na(gestion), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(gestion)),
+                 # certificacion = if_else(is.na(certificacion), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(certificacion)),
                  conductas_de_riesgo = if_else(conductas_de_riesgo == 'COMPETENTE', "C", 
                                               if_else(conductas_de_riesgo == 'COMPETENTE CON OBSERVACIONES', "C/O",
-                                                      if_else(conductas_de_riesgo == 'NO COMPETENTE', "N/C", ""))),
-                 resultado_final_3d = if_else(resultado_final_3d == 'COMPETENTE', as.character(icon("smile", class = "fa-solid", style = "font-size: 24px;color: #77C151;")), 
-                                           if_else(resultado_final_3d == 'COMPETENTE CON OBSERVACIONES', as.character(icon("meh", class = "fa-solid", style = "font-size: 24px;color: #F1C429;")),
-                                                   if_else(resultado_final_3d == 'NO COMPETENTE', as.character(icon("frown", class = "fa-solid", style = "font-size: 24px;color: #E4465C;")),as.character(""))))) %>%
+                                                      if_else(conductas_de_riesgo == 'NO COMPETENTE', "N/C", "")))
+                 # resultado_final_3d = if_else(resultado_final_3d == 'COMPETENTE', as.character(icon("smile", class = "fa-solid", style = "font-size: 24px;color: #77C151;")), 
+                 #                           if_else(resultado_final_3d == 'COMPETENTE CON OBSERVACIONES', as.character(icon("meh", class = "fa-solid", style = "font-size: 24px;color: #F1C429;")),
+                 #                                   if_else(resultado_final_3d == 'NO COMPETENTE', as.character(icon("frown", class = "fa-solid", style = "font-size: 24px;color: #E4465C;")),as.character(""))))
+          ) %>%
           relocate(n) %>%
           relocate(fecha_de_ultima_evaluacion, .after = cargo) %>%
           relocate(vr, .after = conocimientos_en_seguridad) %>% 
+          relocate(informe, .after = last_col()) %>% 
+          relocate(fecha_vencimiento, .before = informe) %>% 
           # relocate(estado_evaluacion_3d, .after = fecha_de_ultima_evaluacion) %>%
           select(-apellidos)
         
@@ -265,7 +224,9 @@ registro_resultados_server <- function(id, rv, file_loader){
           }
         }
         
-        names(table) <- c("n","id", "Rut", "Participante", "Cargo", "Fecha Evaluación", "PS","CO", "CS", "VR", "TT", "TP", "GE", "CE", "Final")
+        # names(table) <- c("n","id", "Rut", "Participante", "Cargo", "Fecha Evaluación", "PS","CO", "CS", "VR", "Final")
+        names(table) <- c("n","id", "Rut", "Participante", "Cargo", "Fecha Evaluación", "EPP","AI", "CI", "CC", "Fecha vencimiento", "Informe")
+        
         table <- datatable(table,
                            #filter = "top",
                            rownames = FALSE,
@@ -283,27 +244,27 @@ registro_resultados_server <- function(id, rv, file_loader){
                                           #   "$(this.api().table().header()).css({'font-size': '85%'});",
                                           #   "}")
                            ),
-                           callback = JS(paste0("var tips = ['Index', 'id', 'Rut', 'Nombres y Apellidos', 'Cargo', 'Fecha Última Evaluación', 'Psicolaboral', 'Conductual', 'Conocimiento Seguridad', 'Identificación de Riesgos', 'Técnico Teórico', 'Técnico Práctico', 'Gestión', 'Certificación', 'Resultado Final'],
+                           callback = JS(paste0("var tips = ['Index', 'id', 'Rut', 'Nombres y Apellidos', 'Cargo', 'Fecha Última Evaluación', 'Uso EPP', 'Acciones Inseguras', 'Condiciones Inseguras', 'Controles Críticos', 'Fecha de Vencimiento', 'Descarga de Informe'],
                                             firstRow = $('#",session$ns('resultados_table')," thead tr th');
                                             for (var i = 0; i < tips.length; i++) {
                                               $(firstRow[i]).attr('title', tips[i]);
                                             }"))
-        ) %>% 
-          formatStyle(columns = c("PS"),
-                      backgroundColor = styleInterval(c(77,89), c(rojo,naranjo,verde)),
-                      fontWeight = 'bold', `text-align` = 'center') %>%
-          formatStyle(columns = c("CO"),
-                      backgroundColor = styleEqual(c("N/C", "C/O", "C"), c(rojo,naranjo,verde)),
-                      fontWeight = 'bold', `text-align` = 'center') %>%
-          formatStyle(c("VR", "CS"),
-                      backgroundColor = styleInterval(c(69.3,81.2), c(rojo,naranjo,verde)),
-                      fontWeight = 'bold', `text-align` = 'center') %>%
-          formatStyle(c("TT", "TP", "GE"),
-                      backgroundColor = styleInterval(c(65.3,85.7,100), c(rojo,naranjo,verde,"")),
-                      fontWeight = 'bold', `text-align` = 'center') %>%
-          formatStyle(columns = c("CE"),
-                      backgroundColor = styleEqual(100, verde),
-                      fontWeight = 'bold', `text-align` = 'center')
+        ) 
+          # formatStyle(columns = c("EPP"),
+          #             backgroundColor = styleInterval(c(77,89), c(rojo,naranjo,verde)),
+          #             fontWeight = 'bold', `text-align` = 'center') %>%
+          # formatStyle(columns = c("CO"),
+          #             backgroundColor = styleEqual(c("N/C", "C/O", "C"), c(rojo,naranjo,verde)),
+          #             fontWeight = 'bold', `text-align` = 'center') %>%
+          # formatStyle(c("VR", "CS"),
+          #             backgroundColor = styleInterval(c(69.3,81.2), c(rojo,naranjo,verde)),
+          #             fontWeight = 'bold', `text-align` = 'center')  %>%
+          # formatStyle(c("TT", "TP", "GE"),
+          #             backgroundColor = styleInterval(c(65.3,85.7,100), c(rojo,naranjo,verde,"")),
+          #             fontWeight = 'bold', `text-align` = 'center') %>%
+          # formatStyle(columns = c("CE"),
+          #             backgroundColor = styleEqual(100, verde),
+          #             fontWeight = 'bold', `text-align` = 'center')
         
       })
       

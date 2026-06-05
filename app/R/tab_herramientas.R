@@ -6,30 +6,30 @@ herramientas_ui <- function(id){
       width = 12,
       headerBorder = F,
       collapsible = F,
-      fluidRow(
-        column(
-          width = 8,
-          p("Grupo de herramientas que facilitan llevar un adecuado seguimiento y control para lo que se deben cargar los datos exportados desde la entidad evaluadora e importalos a continuacion:")
-        ),
-        column(
-          width = 4,
-          uiOutput(NS(id,"btn_cargar"), inline = T)
-        )
-      ),
+      # fluidRow(
+      #   column(
+      #     width = 8,
+      #     p("Grupo de herramientas que facilitan llevar un adecuado seguimiento y control para lo que se deben cargar los datos exportados desde la entidad evaluadora e importalos a continuacion:")
+      #   ),
+      #   column(
+      #     width = 4,
+      #     uiOutput(NS(id,"btn_cargar"), inline = T)
+      #   )
+      # ),
       bs4Dash::tabsetPanel(
         id = "panel_herramientas",
         tabPanel(
-          title = "Resultados",
-          registro_resultados_ui(NS(id,"registro_resultados"))
-        ),
-        tabPanel(
-          title = "Alertas",
-          alertas_ui(NS(id, "alertas"))
-        ),
-        tabPanel(
           title = "Análisis",
           estadisticas_ui(NS(id, "estadisticas"))
+        ),
+        tabPanel(
+          title = "Resultados",
+          registro_resultados_ui(NS(id,"registro_resultados"))
         )
+        # tabPanel(
+        #   title = "Alertas",
+        #   alertas_ui(NS(id, "alertas"))
+        # ),
       )
     )
   )
