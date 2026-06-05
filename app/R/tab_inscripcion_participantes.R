@@ -598,12 +598,12 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
        })
        
        output$responses_table <- DT::renderDT({
-         # table <- responses_df() %>% select(-c(id, id_empresa, fecha_solicitud, ingresado_por, borrado, fecha_borrado, borrado_por)) %>% 
          # browser()
-         table <- responses_df() %>% select(-id, -id_empresa, -email, -telefono, -centro_de_costo, -psicolaboral, -conductual, -conocimiento_seguridad, -vr, -tecnico_teorico, -gestion) %>% 
+         table <- responses_df() %>% select(-id, -id_empresa, -centro_de_costo, -psicolaboral, -conductual, -conocimiento_seguridad, -vr, -tecnico_teorico, -gestion) %>% 
            mutate(nombres = paste0("<strong>", str_to_title(nombres), "</strong>", "<br>", "<i>", str_to_title(apellidos), "</i>"),
                   #apellidos = str_to_title(apellidos),
                   solicitante = paste0("<strong>", str_to_lower(email_solicitante), "</strong>", "<br>", "<i>", telefono_solicitante, "</i>"),
+                  contacto = paste0("<strong>", str_to_lower(email), "</strong>", "<br>", "<i>", telefono, "</i>"),
                   cargo = paste0("<strong>", str_to_title(cargo), "</strong>", "<br>", "<i>", str_to_title(nombre_empresa), "</i>"),
                   # fecha_solicitud = paste0(format(date(fecha_solicitud), format = "%d-%m-%y"), "<br>", sprintf("%02d:%02d", hour(fecha_solicitud), minute(fecha_solicitud))),
                   fecha_solicitud = if_else((lubridate::hour(fecha_solicitud) == 0 & lubridate::minute(fecha_solicitud) == 0),
@@ -619,16 +619,17 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                   # tecnico_teorico = if_else(tecnico_teorico == '1', as.character(icon("ok", lib = "glyphicon", style = "color:blue;")), as.character("")),
                   # gestion = if_else(gestion == '1', as.character(icon("ok", lib = "glyphicon", style = "color:blue;")), as.character(""))
             ) %>%
-           select(-apellidos, -email_solicitante, -telefono_solicitante, -fecha_presencial, -nombre_empresa) %>%
+           select(-apellidos, -email_solicitante, -telefono_solicitante, -fecha_presencial, -nombre_empresa, -email, -telefono) %>%
            relocate(solicitante, .after = cargo) %>%
+           relocate(contacto, .before = cargo) %>%
            mutate(
              index = row_number(),
              escena = as.character(NA)
            ) %>% 
            relocate(escena, .before = urgencia) %>%
            relocate(index) 
-         names(table) <- c("n", "Rut", "Participante","Cargo","Solicitante", "Fecha Solicitud",
-                           "Fecha Evaluación", "Escena", "Urgencia")
+         names(table) <- c("n", "Rut", "Participante","Contacto","Cargo","Solicitante", "Fecha Solicitud",
+                           "Fecha Evaluación", "Estado", "Urgencia")
          table <- datatable(table, 
                             rownames = FALSE,
                             escape = FALSE,
@@ -636,10 +637,10 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                             selection = 'single',
                             options = list(searchHighlight = T, searching = T, scrollX = T, autoWidth = F, ordering = F,
                                            columnDefs = list(list(className = 'dt-center', targets = "_all"),
-                                                             list(targets = 8, visible = FALSE)),
+                                                             list(targets = 9, visible = FALSE)),
                                            language = list(url = 'https://cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')
                                            ),
-                            callback = JS(paste0("var tips = ['Index', 'Rut', 'Participante', 'Cargo', 'Contacto Solicitante', 'Fecha de Solicitud de Evaluación','Fecha Inicio de Evaluaciones','Escena','Urgencia'],
+                            callback = JS(paste0("var tips = ['Index', 'Rut', 'Participante', 'Info de Contacto', 'Cargo', 'Contacto Solicitante', 'Fecha de Solicitud de Evaluación','Fecha Inicio de Evaluaciones','Estado','Urgencia'],
                                           firstRow = $('#",session$ns('responses_table')," thead tr th');
                                           for (var i = 0; i < tips.length; i++) {
                                             $(firstRow[i]).attr('title', tips[i]);
