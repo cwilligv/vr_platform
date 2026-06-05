@@ -388,18 +388,18 @@ server = function(input, output, session) {
   })
   
   output$menu_herramientas <- renderMenu({
-    # if (user()$bloqueado) {
-    #   return(NULL)
-    # } else {
-    #   if (user()$rol %in% c('admin', 'cliente_jefatura')) {
-    #     print("Desplegando menu herramientas")
-    #     menuItem(
-    #       text = "Herramientas",
-    #       tabName = "tab_herramientas",
-    #       icon = icon("tools", lib = "font-awesome")
-    #     )
-    #   }
-    # }
+    if (user()$bloqueado) {
+      return(NULL)
+    } else {
+      if (user()$rol %in% c('admin', 'cliente')) {
+        print("Desplegando menu herramientas")
+        menuItem(
+          text = "Resultados",
+          tabName = "tab_herramientas",
+          icon = icon("square-poll-vertical", lib = "font-awesome")
+        )
+      }
+    }
   })
   
   # output$menu_resultados <- renderMenu({

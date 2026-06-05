@@ -71,7 +71,7 @@ estadisticas_server <- function(id, rv){
         #make reactive to
         dataChangedTrigger()
         
-        updateSelectInput(session, "listado_empresas", selected = as.numeric(session$userData$id_empresa))
+        # updateSelectInput(session, "listado_empresas", selected = as.numeric(session$userData$id_empresa))
         
         # Filtro WHERE
         if (as.numeric(session$userData$id_empresa) == 0) {
