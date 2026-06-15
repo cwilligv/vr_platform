@@ -182,11 +182,11 @@ registro_resultados_server <- function(id, rv, file_loader){
                  -conocimientos_en_seguridad_categoria, -tecnica_teorica_categoria, -tecnica_practica_categoria, -gestion_categoria, -perfil_3d,
                  -dim_seguridad, -dim_seguridad_categoria, -dim_psicolaboral, -dim_psicolaboral_fecha, -dim_psicolaboral_categoria, -dim_tecnica, 
                  -dim_tecnica_categoria, -estado_vigente_vencido, -estado_evaluacion_3d, -updated_by,
-                 -tecnica_teorica, -tecnica_practica, -gestion, -certificacion, -resultado_final_3d) %>% 
+                 -tecnica_teorica, -tecnica_practica, -gestion, -certificacion, -resultado_final_3d, -vr) %>% 
           mutate(nombres = paste0("<strong>", str_to_title(nombres), "</strong>", "<br>", "<i>", str_to_title(apellidos), "</i>"),
                  n = row_number(),
                  fecha_de_ultima_evaluacion  = format(as.Date(fecha_de_ultima_evaluacion ), format = "%d-%m-%y"),
-                 vr = if_else(is.na(vr), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(vr)),
+                 # vr = if_else(is.na(vr), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(vr)),
                  fecha_vencimiento = as.character(NA),
                  informe = as.character(NA),
                  # tecnica_teorica = if_else(is.na(tecnica_teorica), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(tecnica_teorica)),
@@ -202,7 +202,7 @@ registro_resultados_server <- function(id, rv, file_loader){
           ) %>%
           relocate(n) %>%
           relocate(fecha_de_ultima_evaluacion, .after = cargo) %>%
-          relocate(vr, .after = conocimientos_en_seguridad) %>% 
+          # relocate(vr, .after = conocimientos_en_seguridad) %>% 
           relocate(informe, .after = last_col()) %>% 
           relocate(fecha_vencimiento, .before = informe) %>% 
           # relocate(estado_evaluacion_3d, .after = fecha_de_ultima_evaluacion) %>%
@@ -225,7 +225,7 @@ registro_resultados_server <- function(id, rv, file_loader){
         }
         
         # names(table) <- c("n","id", "Rut", "Participante", "Cargo", "Fecha Evaluación", "PS","CO", "CS", "VR", "Final")
-        names(table) <- c("n","id", "Rut", "Participante", "Cargo", "Fecha Evaluación", "EPP","AI", "CI", "CC", "Fecha vencimiento", "Informe")
+        names(table) <- c("n","id", "Rut", "Participante", "Cargo", "Fecha Evaluación", "IR","CR", "RF", "Fecha vencimiento", "Informe")
         
         table <- datatable(table,
                            #filter = "top",
@@ -244,7 +244,7 @@ registro_resultados_server <- function(id, rv, file_loader){
                                           #   "$(this.api().table().header()).css({'font-size': '85%'});",
                                           #   "}")
                            ),
-                           callback = JS(paste0("var tips = ['Index', 'id', 'Rut', 'Nombres y Apellidos', 'Cargo', 'Fecha Última Evaluación', 'Uso EPP', 'Acciones Inseguras', 'Condiciones Inseguras', 'Controles Críticos', 'Fecha de Vencimiento', 'Descarga de Informe'],
+                           callback = JS(paste0("var tips = ['Index', 'id', 'Rut', 'Nombres y Apellidos', 'Cargo', 'Fecha Última Evaluación', 'Identificación de Riesgo', 'Conductas de Riesgo', 'Resultado Final', 'Fecha de Vencimiento', 'Descarga de Informe'],
                                             firstRow = $('#",session$ns('resultados_table')," thead tr th');
                                             for (var i = 0; i < tips.length; i++) {
                                               $(firstRow[i]).attr('title', tips[i]);
