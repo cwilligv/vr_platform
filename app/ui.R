@@ -132,9 +132,9 @@ ui <- dashboardPage(
                                ),
                                menuItemOutput("menu_inscripciones"), #tab2,
                                menuItemOutput("menu_monitor"), #tab3,
-                               menuItemOutput("menu_satisfaccion"),
                                # menuItemOutput("menu_certificados"),
-                               menuItemOutput("menu_herramientas"), #tab_herramientas
+                               menuItemOutput("menu_herramientas"), #Menu resultados
+                               menuItemOutput("menu_satisfaccion"),
                                menuItemOutput("menu_pagos"), # tab9
                                # menuItemOutput("menu_soporte"), # tab7
                                menuItemOutput("menu_monitor_interno"),
