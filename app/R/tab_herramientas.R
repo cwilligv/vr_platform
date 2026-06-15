@@ -19,12 +19,12 @@ herramientas_ui <- function(id){
       bs4Dash::tabsetPanel(
         id = "panel_herramientas",
         tabPanel(
-          title = "Análisis",
-          estadisticas_ui(NS(id, "estadisticas"))
-        ),
-        tabPanel(
           title = "Resultados",
           registro_resultados_ui(NS(id,"registro_resultados"))
+        ),
+        tabPanel(
+          title = "Análisis",
+          estadisticas_ui(NS(id, "estadisticas"))
         )
         # tabPanel(
         #   title = "Alertas",
