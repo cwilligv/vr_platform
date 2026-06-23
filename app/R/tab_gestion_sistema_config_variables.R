@@ -8,7 +8,9 @@ config_sistema_ui <- function(id){
     # ),
     uiOutput(NS(id,"switch_ui")),
     hr(),
-    uiOutput(NS(id, "inactivity_months_ui"))
+    uiOutput(NS(id, "inactivity_months_ui")),
+    hr(),
+    uiOutput(NS(id, "number_of_vr_ui"))
   )
 }
 
@@ -88,11 +90,11 @@ config_sistema_server <- function(id){
 
         if (as.numeric(input$inactivity_months) >= 1 && as.numeric(input$inactivity_months) <= 12) {
           set_system_variable('sistema', NULL, 'numero_de_meses_de_inactividad', as.numeric(input$inactivity_months))
-          
+
           showNotification("Configuración de inactividad guardada.", type = "message")
-          
+
           output$inactivity_status <- renderText({
-            paste("Configuración guardada: Los usuarios serán considerados inactivos después de", 
+            paste("Configuración guardada: Los usuarios serán considerados inactivos después de",
                   input$inactivity_months, "meses.")
           })
         } else {
@@ -101,7 +103,60 @@ config_sistema_server <- function(id){
           })
         }
       })
-      
+
+      # Number of VR headsets configuration
+      output$number_of_vr_ui <- renderUI({
+        ns <- session$ns
+        current_value <- get_system_variable('sistema', NULL, 'numero_de_vr')
+        if (is.null(current_value) || length(current_value) == 0) {
+          current_value <- 1
+        }
+
+        tagList(
+          h5("Configuración de Equipos VR"),
+          div(
+            style = "display: flex; align-items: flex-end; gap: 10px;",
+            div(
+              style = "width: 350px; margin-bottom: 0;",
+              selectInput(
+                inputId = ns("number_of_vr"),
+                label = "Número de equipos VR disponibles para evaluaciones:",
+                choices = 1:10,
+                selected = as.numeric(current_value),
+                width = "100%"
+              )
+            ),
+            div(
+              style = "padding-bottom: 12px;",
+              actionButton(
+                inputId = ns("save_number_of_vr"),
+                label = "Guardar",
+                class = "btn-primary"
+              )
+            )
+          ),
+          textOutput(ns("vr_status"))
+        )
+      })
+
+      observeEvent(input$save_number_of_vr, {
+        req(input$number_of_vr)
+
+        if (as.numeric(input$number_of_vr) >= 1 && as.numeric(input$number_of_vr) <= 10) {
+          set_system_variable('sistema', NULL, 'numero_de_vr', as.numeric(input$number_of_vr))
+
+          showNotification("Configuración de equipos VR guardada.", type = "message")
+
+          output$vr_status <- renderText({
+            paste("Configuración guardada:", input$number_of_vr, "equipos VR disponibles para reservas.")
+          })
+        } else {
+          output$vr_status <- renderText({
+            "Error: El número de equipos VR debe estar entre 1 y 10"
+          })
+        }
+      })
+
     }
   )
 }

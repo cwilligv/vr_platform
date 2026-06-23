@@ -143,7 +143,7 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
          }
          
          dbExecute(pool, 'SET character set "utf8"')
-         tbl <- glue::glue_sql("select * from {`db`}.participantes_view where ({filtros})", .con = pool)
+         tbl <- glue::glue_sql("select * from {`db`}.preparaciones_view where ({filtros})", .con = pool)
          dbGetQuery(pool, tbl)
          
        })  
@@ -304,28 +304,28 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
        #     "Debe ingresar al menos una fecha, online o presencial."
        #   }
        # })
-       iv$add_rule("fecha_solicitud_urgente", function(value){
-         
-         if (!editing_on()) {
-           if((input$tipo_solicitud == 1) && (length(input$fecha_solicitud_urgente) == 0)) {
-             "Seleccione una fecha."
-           } else {
-             if ((input$tipo_solicitud == 1) && (ymd(input$fecha_solicitud_urgente) < lubridate::today(tzone = "Chile/Continental"))) {
-               "Fecha incorrecta. Es menor que fecha de inicio."
-             }
-           }
-         }
-       })
-       iv$add_rule("horario_urgente", function(value){
-         
-         if (!editing_on()) {
-           if((input$tipo_solicitud == 1) && (input$horario_urgente == "")) {
-             "Seleccione un horario."
-           } else {
-             NULL
-           }
-         }
-       })
+       # iv$add_rule("fecha_solicitud_urgente", function(value){
+       #   
+       #   if (!editing_on()) {
+       #     if((input$tipo_solicitud == 1) && (length(input$fecha_solicitud_urgente) == 0)) {
+       #       "Seleccione una fecha."
+       #     } else {
+       #       if ((input$tipo_solicitud == 1) && (ymd(input$fecha_solicitud_urgente) < lubridate::today(tzone = "Chile/Continental"))) {
+       #         "Fecha incorrecta. Es menor que fecha de inicio."
+       #       }
+       #     }
+       #   }
+       # })
+       # iv$add_rule("horario_urgente", function(value){
+       #   
+       #   if (!editing_on()) {
+       #     if((input$tipo_solicitud == 1) && (input$horario_urgente == "")) {
+       #       "Seleccione un horario."
+       #     } else {
+       #       NULL
+       #     }
+       #   }
+       # })
        
        # Boton submit inscripcion de participante
        observeEvent(input$submit, priority = 20,{
@@ -468,13 +468,15 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
            })  
          
          if (length(input$responses_table_rows_selected) == 1) {
-           if(se_puede_editar(SQL_df[input$responses_table_rows_selected, "id"]) | session$userData$rol == 'admin'){
+           if(se_puede_editar(SQL_df[input$responses_table_rows_selected, "id_participante"]) | session$userData$rol == 'admin'){
              
              # telemetry$log_input_manual(
              #   input_id = ns("edit_button"),
              #   value = SQL_df[input$responses_table_rows_selected, "rut"],
              #   session = session
              # )
+             
+             horario_selected <- as.character(SQL_df[input$responses_table_rows_selected, "horario"])
              
              entry_form("submit_edit", "Editar Inscripción")
              
@@ -485,28 +487,31 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
              updateTextInput(session, "email", value = SQL_df[input$responses_table_rows_selected, "email"])
              updateSelectInput(session, "centrocosto", choices = get_centro_de_costos_por_participante(SQL_df[input$responses_table_rows_selected, "id"]), selected = SQL_df[input$responses_table_rows_selected, "centro_de_costo"])
              updateTextInput(session, "cargo", value = SQL_df[input$responses_table_rows_selected, "cargo"])
-             updateDateInput(session, "fecha_online", value = SQL_df[input$responses_table_rows_selected, "fecha_online"])
-             updateDateInput(session, "fecha_presencial", value = SQL_df[input$responses_table_rows_selected, "fecha_presencial"])
+             updateDateInput(session, "fecha_solicitud_urgente", value = SQL_df[input$responses_table_rows_selected, "fecha_preparacion"])
+             updateSelectInput(session, "horario_edit", selected = SQL_df[input$responses_table_rows_selected, "horario"])
+             
+             # updateDateInput(session, "fecha_online", value = SQL_df[input$responses_table_rows_selected, "fecha_online"])
+             # updateDateInput(session, "fecha_presencial", value = SQL_df[input$responses_table_rows_selected, "fecha_presencial"])
              # updateCheckboxInput(session, "tipo_solicitud", value = SQL_df[input$responses_table_rows_selected, "urgencia"])
-             updateRadioButtons(session, "tipo_solicitud", selected = as.numeric(SQL_df[input$responses_table_rows_selected, "urgencia"]))
-             selectedGroup = c(as.numeric(SQL_df[input$responses_table_rows_selected, "psicolaboral"])*1,
-                               as.numeric(SQL_df[input$responses_table_rows_selected, "conductual"])*2,
-                               as.numeric(SQL_df[input$responses_table_rows_selected, "conocimiento_seguridad"])*3,
-                               as.numeric(SQL_df[input$responses_table_rows_selected, "vr"])*4,
-                               as.numeric(SQL_df[input$responses_table_rows_selected, "tecnico_teorico"])*5,
-                               as.numeric(SQL_df[input$responses_table_rows_selected, "gestion"])*6
-             )
-             selectedGroup = selectedGroup[!is.na(selectedGroup) & !selectedGroup == 0]
+             # updateRadioButtons(session, "tipo_solicitud", selected = as.numeric(SQL_df[input$responses_table_rows_selected, "urgencia"]))
+             # selectedGroup = c(as.numeric(SQL_df[input$responses_table_rows_selected, "psicolaboral"])*1,
+             #                   as.numeric(SQL_df[input$responses_table_rows_selected, "conductual"])*2,
+             #                   as.numeric(SQL_df[input$responses_table_rows_selected, "conocimiento_seguridad"])*3,
+             #                   as.numeric(SQL_df[input$responses_table_rows_selected, "vr"])*4,
+             #                   as.numeric(SQL_df[input$responses_table_rows_selected, "tecnico_teorico"])*5,
+             #                   as.numeric(SQL_df[input$responses_table_rows_selected, "gestion"])*6
+             # )
+             # selectedGroup = selectedGroup[!is.na(selectedGroup) & !selectedGroup == 0]
              
              if (session$userData$rol %in% c('cliente')) {
                shinyjs::disable("email")
              }
-             shinyjs::disable("fecha_online")
-             shinyjs::disable("fecha_presencial")
-             shinyjs::disable("tipo_solicitud")
-             print("selectedGroup")
-             print(selectedGroup)
-             print("===========")
+             # shinyjs::disable("fecha_online")
+             # shinyjs::disable("fecha_presencial")
+             # shinyjs::disable("tipo_solicitud")
+             # print("selectedGroup")
+             # print(selectedGroup)
+             # print("===========")
              # updateCheckboxGroupInput(session, "checkGroup_capacitaciones", choices = c("Psicolaboral" = 1, "Conductual" = 2, "Conocimientos Seguridad" = 3,
              #                                                                "Identificacion de Riesgos" = 4, "Tecnico Teorico" = 5, "Gestion" = 6),
              #                          
@@ -514,14 +519,14 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
              #                          selected = c(1,2,5))
              
              
-             output$checkGroup_capacitaciones <- renderUI({
-               checkboxGroupInput(ns("checkBoxGroup"), label = "", 
-                                  choices = c("Psicolaboral" = 1, "Conductual" = 2, "Conocimientos Seguridad" = 3,
-                                              "Identificación de Riesgos" = 4, "Técnico Teórico" = 5, "Gestión" = 6), 
-                                  inline = F,
-                                  selected = selectedGroup
-               )
-             })
+             # output$checkGroup_capacitaciones <- renderUI({
+             #   checkboxGroupInput(ns("checkBoxGroup"), label = "", 
+             #                      choices = c("Psicolaboral" = 1, "Conductual" = 2, "Conocimientos Seguridad" = 3,
+             #                                  "Identificación de Riesgos" = 4, "Técnico Teórico" = 5, "Gestión" = 6), 
+             #                      inline = F,
+             #                      selected = selectedGroup
+             #   )
+             # })
              
            }else{
              showModal(
@@ -599,10 +604,10 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
        
        output$responses_table <- DT::renderDT({
          # browser()
-         table <- responses_df() %>% select(-id, -id_empresa, -centro_de_costo, -psicolaboral, -conductual, -conocimiento_seguridad, -vr, -tecnico_teorico, -gestion) %>% 
+         table <- responses_df() %>% select(-id_preparacion, -id_empresa, -centro_de_costo, -id_coach, -es_horario_especial, -id_participante) %>% 
            mutate(nombres = paste0("<strong>", str_to_title(nombres), "</strong>", "<br>", "<i>", str_to_title(apellidos), "</i>"),
                   #apellidos = str_to_title(apellidos),
-                  solicitante = paste0("<strong>", str_to_lower(email_solicitante), "</strong>", "<br>", "<i>", telefono_solicitante, "</i>"),
+                  solicitante = paste0("<strong>", str_to_lower(solicitante_email), "</strong>", "<br>", "<i>", solicitante_telefono, "</i>"),
                   contacto = paste0("<strong>", str_to_lower(email), "</strong>", "<br>", "<i>", telefono, "</i>"),
                   cargo = paste0("<strong>", str_to_title(cargo), "</strong>", "<br>", "<i>", str_to_title(nombre_empresa), "</i>"),
                   # fecha_solicitud = paste0(format(date(fecha_solicitud), format = "%d-%m-%y"), "<br>", sprintf("%02d:%02d", hour(fecha_solicitud), minute(fecha_solicitud))),
@@ -610,46 +615,39 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                                             paste0(format(date(fecha_solicitud), format = "%d-%m-%y"), "<br>", "--:--"),
                                             paste0(format(date(fecha_solicitud), format = "%d-%m-%y"), "<br>", sprintf("%02d:%02d", hour(fecha_solicitud), minute(fecha_solicitud)))),
                   # fecha_solicitud = format(as.Date(fecha_solicitud), format = "%d-%m-%y"),
-                  fecha_online = format(as.Date(fecha_online), format = "%d-%m-%y"),
-                  # fecha_presencial = format(as.Date(fecha_presencial), format = "%d-%m-%y"),
-                  # psicolaboral = if_else(psicolaboral == '1', as.character(icon("ok", lib = "glyphicon", style = "color:blue;")), as.character("")),
-                  # conductual = if_else(conductual == '1', as.character(icon("ok", lib = "glyphicon", style = "color:blue;")), as.character("")),
-                  # conocimiento_seguridad = if_else(conocimiento_seguridad == 1, as.character(icon("ok", lib = "glyphicon", style = "color:blue;")), as.character("")),
-                  # vr = if_else(vr == '1', as.character(icon("ok", lib = "glyphicon", style = "color:blue;")), as.character("")),
-                  # tecnico_teorico = if_else(tecnico_teorico == '1', as.character(icon("ok", lib = "glyphicon", style = "color:blue;")), as.character("")),
-                  # gestion = if_else(gestion == '1', as.character(icon("ok", lib = "glyphicon", style = "color:blue;")), as.character(""))
+                  fecha_preparacion = paste0(format(date(fecha_preparacion), format = "%d-%m-%y"), "<br>", sprintf("%02d:%02d", hour(lubridate::parse_date_time(horario, "%I:%M %p")), minute(lubridate::parse_date_time(horario, "%I:%M %p")))),
+                  nombres_monitor = paste0(str_to_title(nombres_coach), " ", str_to_title(apellidos_coach)),
+                  estado = str_to_title(estado)
             ) %>%
-           select(-apellidos, -email_solicitante, -telefono_solicitante, -fecha_presencial, -nombre_empresa, -email, -telefono) %>%
+           select(-apellidos, -solicitante_email, -solicitante_telefono, -nombre_empresa, -email, -telefono, -horario, -nombres_coach, -apellidos_coach) %>%
            relocate(solicitante, .after = cargo) %>%
            relocate(contacto, .before = cargo) %>%
            mutate(
-             index = row_number(),
-             escena = as.character(NA)
+             index = row_number()
+             # escena = as.character(NA)
            ) %>% 
-           relocate(escena, .before = urgencia) %>%
+           # relocate(escena, .before = urgencia) %>%
            relocate(index) 
-         names(table) <- c("n", "Rut", "Participante","Contacto","Cargo","Solicitante", "Fecha Solicitud",
-                           "Fecha Evaluación", "Estado", "Urgencia")
+         names(table) <- c("n", "Rut", "Participante","Contacto","Cargo","Solicitante", "Fecha <br>Solicitud", "Fecha <br>Evaluación", "Estado", "Monitor")
          table <- datatable(table, 
                             rownames = FALSE,
                             escape = FALSE,
                             class = 'cell-border stripe',
                             selection = 'single',
                             options = list(searchHighlight = T, searching = T, scrollX = T, autoWidth = F, ordering = F,
-                                           columnDefs = list(list(className = 'dt-center', targets = "_all"),
-                                                             list(targets = 9, visible = FALSE)),
+                                           columnDefs = list(list(className = 'dt-center', targets = "_all")),
                                            language = list(url = 'https://cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')
                                            ),
-                            callback = JS(paste0("var tips = ['Index', 'Rut', 'Participante', 'Info de Contacto', 'Cargo', 'Contacto Solicitante', 'Fecha de Solicitud de Evaluación','Fecha Inicio de Evaluaciones','Estado','Urgencia'],
+                            callback = JS(paste0("var tips = ['Index', 'Rut', 'Participante', 'Info de Contacto', 'Cargo', 'Contacto Solicitante', 'Fecha de Solicitud de Evaluación','Fecha Inicio de Evaluaciones','Estado', 'Nombre del Monitor'],
                                           firstRow = $('#",session$ns('responses_table')," thead tr th');
                                           for (var i = 0; i < tips.length; i++) {
                                             $(firstRow[i]).attr('title', tips[i]);
                                           }"))
-         ) %>% 
-           formatStyle(columns = c("Fecha Solicitud"),
-                       valueColumns = c("Urgencia"),
-                       border = styleEqual(1, '3px solid #F1C429')
-           )
+         )
+           # formatStyle(columns = c("Fecha Solicitud"),
+           #             valueColumns = c("Urgencia"),
+           #             border = styleEqual(1, '3px solid #F1C429')
+           # )
          
        })
        
@@ -669,7 +667,7 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                as.POSIXct("2017-01-02", tz = "UTC"), 
                by = "30 min"), 
            format = "%I:%M %P"
-         )[19:45]
+         )[19:39]
          
          if (selected_date == current_date) {
            # Get current time
@@ -774,45 +772,23 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                    title = "Agendamiento",
                    h4("Agendamiento"),
                    br(),
-                   # fluidRow(checkboxInput(ns("tipo_solicitud"), "Agendamiento Especial", value = F)),
-                   fluidRow(
-                     radioButtons(
-                       width = 400,
-                       ns("tipo_solicitud"),
-                       "",
-                       choiceNames = list(
-                         HTML(paste0('
-                     <b style = "margin-left: 5px; text-align: justify;">  Agendamiento Automático (Recomendado)</b>
-                     <p style = "font-weight: normal; text-align: justify;">Se ha designado automáticamente como fecha y horario de capacitación el día antes de la evaluación, como se indica a continuación:</p>
-                     ', fluidRow(
-                       column(6,shinyjs::disabled(textInput(inputId = ns("fecha_prep_autom"), label = "Fecha Capacitación", value = "2024-01-02"))), 
-                       column(6,shinyjs::disabled(textInput(inputId = ns("hora_prep_autom"), label = "Horario", value = "09:00 am")))
-                     ))),
-                         HTML('
-                     <b style = "margin-left: 5px; text-align: justify;">  Agendamiento Especial</b>
-                     <p style = "font-weight: normal; text-align: justify;">Indíquenos la fecha y hora que estime conveniente. Favor utilice esta opción solo si es necesario, por ejemplo, en casos que el participante tenga disponibilidad limitada. <u>(Agendamiento especial sujeta a disponibilidad)</u></p>
-                     ')
-                       ),
-                       choiceValues = list("0", "1"),
-                       selected = "0"
-                     )
+                   p(
+                     style = "font-weight: normal; text-align: justify;",
+                     "Indíquenos la fecha y hora que estime conveniente.",
+                     tags$u("(Bloques sujetos a disponibilidad)")
                    ),
-                   conditionalPanel(
-                     # condition = "input.tipo_solicitud == '1'",
-                     condition = paste0('input[\'', ns('tipo_solicitud'), "\'] == \'1\'"),
-                     fluidRow(
+                   br(),
+                   fluidRow(
                        column(
                          width = 6,
-                         dateInput(ns("fecha_solicitud_urgente"), "Fecha Capacitación", language = "es", weekstart = 1, autoclose = T, value = NA, datesdisabled = restricted_dates_urgent),
+                         dateInput(ns("fecha_solicitud_urgente"), "Fecha Evaluación", language = "es", weekstart = 1, autoclose = T, value = NA, datesdisabled = restricted_dates_urgent),
                        ),
                        column(
                          width = 6,
                          # textInput(ns("horario_urgente"), "Horario", placeholder = "ej: 8:30 am/pm")
                          selectInput(ns("horario_urgente"), "Horario", choices = c(""))
                        )
-                     )
-                   ),
-                   # fluidRow(uiOutput(ns("checkGroup_capacitaciones"))),
+                     ),
                    br(),
                    fluidRow(
                      column(4, actionButton(ns("tab_agendamiento_back_btn"), "Atras", icon = icon("caret-left"), width = 120, style = "background-color: #0079b5; color: white")),
@@ -858,6 +834,12 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
            ))
          } else {
            editing_on(TRUE)
+           full_time_vector <- format(
+             seq(as.POSIXct("2017-01-01", tz = "UTC"), 
+                 as.POSIXct("2017-01-02", tz = "UTC"), 
+                 by = "30 min"), 
+             format = "%I:%M %P"
+           )[19:39]
            showModal(modalDialog(
              fluidPage(
                tabsetPanel(
@@ -866,8 +848,8 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                  tabPanel(
                    title = "Participante",
                    h4("Participante"),
-                   br(),
-                   p("Ingrese a continuacion los datos del participante:"),
+                   # br(),
+                   # p("Ingrese a continuacion los datos del participante:"),
                    br(),
                    fluidRow(column(6, textInput(ns("rut"), labelMandatory("Rut"), placeholder = "ej: 12345678-9"))),
                    fluidRow(column(6, textInput(ns("nombres"), labelMandatory("Nombres"), placeholder = "")),
@@ -876,12 +858,11 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                             column(6, textInput(ns("email"), labelMandatory("Email"), placeholder = ""))),
                    fluidRow(column(6, selectInput(ns("centrocosto"), "Contrato/Proyecto", choices = NULL)),
                             column(6, textInput(ns("cargo"), labelMandatory("Cargo"), placeholder = ""))),
-                   h4("Fechas Evaluación"),
-                   # p("Indique una o ambas, según evaluaciones a rendir."),
-                   p("Indique la fecha que comenzará a rendir las evaluaciones."),
-                   fluidRow(column(6, dateInput(ns("fecha_online"), "Fecha de Inicio", language = "es", weekstart = 1, autoclose = T, value = NA, datesdisabled = restricted_dates)),
-                            column(6, shinyjs::hidden(dateInput(ns("fecha_presencial"), "Fecha presencial", language = "es", weekstart = 1, autoclose = T, value = NA, datesdisabled = restricted_dates)))
-                   ),
+                   # h4("Fechas Evaluación"),
+                   # p("Indique la fecha que comenzará a rendir las evaluaciones."),
+                   # fluidRow(column(6, dateInput(ns("fecha_online"), "Fecha de Inicio", language = "es", weekstart = 1, autoclose = T, value = NA, datesdisabled = restricted_dates)),
+                   #          column(6, shinyjs::hidden(dateInput(ns("fecha_presencial"), "Fecha presencial", language = "es", weekstart = 1, autoclose = T, value = NA, datesdisabled = restricted_dates)))
+                   # ),
                    br(),
                    fluidRow(
                      column(4),
@@ -889,19 +870,49 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                      column(4, actionButton(ns("tab_participante_forward_btn"), label = div("Siguiente", icon("caret-right")), width = 120, style = "background-color: #0079b5; color: white"))
                    )
                  ),
+                 # tabPanel(
+                 #   title = "Evaluaciones",
+                 #   h4("Evaluaciones"),
+                 #   br(),
+                 #   p("Importante, seleccionar solo aquellas subdimensiones (Evaluaciones) que debe rendir el participante:"),
+                 #   br(),
+                 #   fluidRow(uiOutput(ns("checkGroup_capacitaciones"))),
+                 #   textOutput(ns("checkgroup_error_msg")),
+                 #   br(),
+                 #   fluidRow(
+                 #     column(4, actionButton(ns("tab_evaluaciones_back_btn"), "Atras", icon = icon("caret-left"), width = 120, style = "background-color: #0079b5; color: white")),
+                 #     column(4)
+                 #     # column(4, actionButton(ns("tab_evaluaciones_forward_btn"), label = div("Siguiente", icon("caret-right")), width = 120, style = "background-color: #0079b5; color: white"))
+                 #   )
+                 # )
                  tabPanel(
-                   title = "Evaluaciones",
-                   h4("Evaluaciones"),
+                   title = "Agendamiento",
+                   h4("Agendamiento"),
                    br(),
-                   p("Importante, seleccionar solo aquellas subdimensiones (Evaluaciones) que debe rendir el participante:"),
-                   br(),
-                   fluidRow(uiOutput(ns("checkGroup_capacitaciones"))),
-                   textOutput(ns("checkgroup_error_msg")),
+                   p(
+                     style = "font-weight: normal; text-align: justify;",
+                     "Indíquenos la fecha y hora que estime conveniente.",
+                     tags$u("(Bloques sujetos a disponibilidad)")
+                   ),
                    br(),
                    fluidRow(
-                     column(4, actionButton(ns("tab_evaluaciones_back_btn"), "Atras", icon = icon("caret-left"), width = 120, style = "background-color: #0079b5; color: white")),
+                     column(
+                       width = 6,
+                       dateInput(ns("fecha_solicitud_urgente"), "Fecha Evaluación", language = "es", weekstart = 1, autoclose = T, value = NA, datesdisabled = restricted_dates_urgent),
+                     ),
+                     column(
+                       width = 6,
+                       # textInput(ns("horario_urgente"), "Horario", placeholder = "ej: 8:30 am/pm")
+                       selectInput(ns("horario_edit"), "Horario", choices = full_time_vector)
+                     )
+                   ),
+                   br(),
+                   fluidRow(
+                     column(4, actionButton(ns("tab_agendamiento_back_btn"), "Atras", icon = icon("caret-left"), width = 120, style = "background-color: #0079b5; color: white")),
                      column(4)
-                     # column(4, actionButton(ns("tab_evaluaciones_forward_btn"), label = div("Siguiente", icon("caret-right")), width = 120, style = "background-color: #0079b5; color: white"))
+                     # column(4, actionButton(ns("tab_agendamiento_forward_btn"), label = div("Siguiente", icon("caret-right")), width = 120, style = "background-color: #0079b5; color: white"))
+                     
+                     
                    )
                  )
                )

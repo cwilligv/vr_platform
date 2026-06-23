@@ -88,7 +88,7 @@ ui <- dashboardPage(
   useShinyalert(),
   useShinyjs(),
   freshTheme = mytheme,
-  title = "MERC Training 3D",
+  title = "MERC Sistema VR",
   header = dashboardHeader(set_html_attribs(title = "Capacitación 3D"), title = tags$a(tags$img(src='images/merc_720.png', width=180, style = "margin: 10px 0px 0px 10px"), href = "https://www.mercconsultora.cl", target="_blank"),
                            #title = tags$img(src='images/kdmindustrial.jpg', height=72,width=200),
                            titleWidth = "220px",

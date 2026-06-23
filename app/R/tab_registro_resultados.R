@@ -4,22 +4,35 @@ registro_resultados_ui <- function(id){
     h1("Registro de resultados", style = "font-size: 1.8rem;"),
     fluidRow(
       column(
-        width = 3,
-        div(textOutput(NS(id, "fecha_ultima_actualizacion")), style = "padding:5px;")
+        width = 2
+        # div(textOutput(NS(id, "fecha_ultima_actualizacion")), style = "padding:5px;")
       ),
       column(
-        width = 5,
+        width = 6,
         align = "left",
+        # div(
+        #   bslib::layout_columns(
+        #     # width = 1/4,
+        #     col_widths = c(3, 3, 3, 3),
+        #     # fillable = F,
+        #     gap = "0px",
+        #     actionButton(NS(id, "filtro_competentes_final"), label = "TODOS", width = "100%", style = "color: #fff; background-color: #006ac2; height: 30px; padding: 2px 4px;  font-size: 10px;"),
+        #     actionButton(NS(id, "filtro_brechas"), label = "RIESGO BAJO", width = "100%",  style = "background-color: #f8f9fa; height: 30px; padding: 2px 4px;  font-size: 10px;"),
+        #     actionButton(NS(id, "filtro_todos"), label = "RIESGO MEDIO", width = "100%", style = "background-color: #f8f9fa; height: 30px; padding: 2px 4px;  font-size: 10px;"),
+        #     actionButton(NS(id, "filtro_todos2"), label = "RIESGO ALTO", width = "100%", style = "background-color: #f8f9fa; height: 30px; padding: 2px 4px;  font-size: 10px;")
+        #   ),
+        #   style = "padding-top: 40px; margin-bottom: -50px"
+        # )
         div(
-          bslib::layout_columns(
-            width = 1/2,
-            fillable = T,
-            gap = "0px",
-            actionButton(NS(id, "filtro_competentes_final"), label = "COMPETENTE FINAL", width = "100%", style = "color: #fff; background-color: #006ac2; height: 30px", size = "xs"),
-            actionButton(NS(id, "filtro_brechas"), label = "BRECHAS", width = "100%",  style = "background-color: #f8f9fa; height: 30px", size = "xs"),
-            actionButton(NS(id, "filtro_todos"), label = "TODOS", width = "100%", style = "background-color: #f8f9fa; height: 30px", size = "xs")
-          ),
-          style = "padding-top: 40px; margin-bottom: -50px"
+          style = "display: flex; flex-wrap: nowrap; gap: 2px;",
+          actionButton(NS(id, "filtro_competentes_final"), label = "TODOS", style = "flex: 1; min-width: 0; color: #fff;
+  background-color: #006ac2; height: 30px; padding: 2px 4px; font-size: 11px;", size = "xs"),
+          actionButton(NS(id, "filtro_brechas"), label = "RIESGO BAJO", style = "flex: 1; min-width: 0; background-color:
+  #f8f9fa; height: 30px; padding: 2px 4px; font-size: 11px;", size = "xs"),
+          actionButton(NS(id, "filtro_todos"), label = "RIESGO MEDIO", style = "flex: 1; min-width: 0; background-color:
+  #f8f9fa; height: 30px; padding: 2px 4px; font-size: 11px;", size = "xs"),
+          actionButton(NS(id, "filtro_todos2"), label = "RIESGO ALTO", style = "flex: 1; min-width: 0; background-color:
+  #f8f9fa; height: 30px; padding: 2px 4px; font-size: 11px;", size = "xs")
         )
       ),
       column(
@@ -188,7 +201,15 @@ registro_resultados_server <- function(id, rv, file_loader){
                  fecha_de_ultima_evaluacion  = format(as.Date(fecha_de_ultima_evaluacion ), format = "%d-%m-%y"),
                  # vr = if_else(is.na(vr), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(vr)),
                  fecha_vencimiento = as.character(NA),
-                 informe = as.character(NA),
+                 # informe = as.character(NA),
+                 informe = sprintf(
+                   '<a href="#" onclick="Shiny.setInputValue(\'%s\', {id: %d, rut: \'%s\'}, {priority: \'event\'}); return false;">
+                      <i class="fa-solid fa-square-poll-horizontal" style="font-size: 18px; color: #0079b5;"></i>
+                    </a>',
+                   session$ns("informe_click"),
+                   id,  # assuming you have an 'id' column in your data
+                   rut   # or whichever identifier you want to pass
+                 ),
                  # tecnica_teorica = if_else(is.na(tecnica_teorica), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(tecnica_teorica)),
                  # tecnica_practica = if_else(is.na(tecnica_practica), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(tecnica_practica)),
                  # gestion = if_else(is.na(gestion), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(gestion)),
@@ -225,7 +246,7 @@ registro_resultados_server <- function(id, rv, file_loader){
         }
         
         # names(table) <- c("n","id", "Rut", "Participante", "Cargo", "Fecha Evaluación", "PS","CO", "CS", "VR", "Final")
-        names(table) <- c("n","id", "Rut", "Participante", "Cargo", "Fecha Evaluación", "IR","CR", "RF", "Fecha vencimiento", "Informe")
+        names(table) <- c("n","id", "Rut", "Participante", "Cargo", "Fecha <br>Evaluación", "IR","CR", "Resultado <br>Final", "Fecha <br>vencimiento", "Informe")
         
         table <- datatable(table,
                            #filter = "top",
@@ -266,6 +287,13 @@ registro_resultados_server <- function(id, rv, file_loader){
           #             backgroundColor = styleEqual(100, verde),
           #             fontWeight = 'bold', `text-align` = 'center')
         
+      })
+      
+      observeEvent(input$informe_click, {
+        clicked_data <- input$informe_click
+        # clicked_data$id and clicked_data$rut are now available
+        # Do your action here (e.g., generate report, show modal, etc.)
+        showNotification(paste("Generating report for:", clicked_data$rut))
       })
       
       output$fecha_ultima_actualizacion <- renderText({
