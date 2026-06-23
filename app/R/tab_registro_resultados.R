@@ -201,7 +201,15 @@ registro_resultados_server <- function(id, rv, file_loader){
                  fecha_de_ultima_evaluacion  = format(as.Date(fecha_de_ultima_evaluacion ), format = "%d-%m-%y"),
                  # vr = if_else(is.na(vr), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(vr)),
                  fecha_vencimiento = as.character(NA),
-                 informe = as.character(NA),
+                 # informe = as.character(NA),
+                 informe = sprintf(
+                   '<a href="#" onclick="Shiny.setInputValue(\'%s\', {id: %d, rut: \'%s\'}, {priority: \'event\'}); return false;">
+                      <i class="fa-solid fa-square-poll-horizontal" style="font-size: 18px; color: #0079b5;"></i>
+                    </a>',
+                   session$ns("informe_click"),
+                   id,  # assuming you have an 'id' column in your data
+                   rut   # or whichever identifier you want to pass
+                 ),
                  # tecnica_teorica = if_else(is.na(tecnica_teorica), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(tecnica_teorica)),
                  # tecnica_practica = if_else(is.na(tecnica_practica), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(tecnica_practica)),
                  # gestion = if_else(is.na(gestion), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(gestion)),
@@ -279,6 +287,13 @@ registro_resultados_server <- function(id, rv, file_loader){
           #             backgroundColor = styleEqual(100, verde),
           #             fontWeight = 'bold', `text-align` = 'center')
         
+      })
+      
+      observeEvent(input$informe_click, {
+        clicked_data <- input$informe_click
+        # clicked_data$id and clicked_data$rut are now available
+        # Do your action here (e.g., generate report, show modal, etc.)
+        showNotification(paste("Generating report for:", clicked_data$rut))
       })
       
       output$fecha_ultima_actualizacion <- renderText({
