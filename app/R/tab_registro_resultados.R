@@ -181,13 +181,14 @@ registro_resultados_server <- function(id, rv, file_loader){
         }
         
         dbExecute(pool, 'SET character set "utf8"')
-        tbl <- glue::glue_sql("select * from {`db`}.resultados_planilla where ({filtros}) and ({filtro2}) order by CAST(fecha_de_ultima_evaluacion as date) DESC", .con = pool)
+        tbl <- glue::glue_sql("select a.*, b.nombre_fantasia from {`db`}.resultados_planilla a left join clientes b on a.id_empresa=b.id_empresa where ({filtros}) and ({filtro2}) order by CAST(fecha_de_ultima_evaluacion as date) DESC", .con = pool)
         print(tbl)
         dbGetQuery(pool, tbl)
       })
       
       output$resultados_table <- DT::renderDataTable({
         print("rendering table resultados")
+        # browser()
         table <- resultados_df() %>% 
           select(-id_empresa,-psicolaboral_fecha,-conductas_de_riesgo_fecha,-vr_fecha,-conocimientos_en_seguridad_fecha,
                  -tecnica_teorica_fecha,-tecnica_practica_fecha,-gestion_fecha,-fecha_examen_presencial,-fecha_examen_on_line, 
@@ -197,6 +198,7 @@ registro_resultados_server <- function(id, rv, file_loader){
                  -dim_tecnica_categoria, -estado_vigente_vencido, -estado_evaluacion_3d, -updated_by,
                  -tecnica_teorica, -tecnica_practica, -gestion, -certificacion, -resultado_final_3d, -vr) %>% 
           mutate(nombres = paste0("<strong>", str_to_title(nombres), "</strong>", "<br>", "<i>", str_to_title(apellidos), "</i>"),
+                 cargo = paste0("<strong>", str_to_title(cargo), "</strong>", "<br>", "<i>", str_to_title(nombre_fantasia), "</i>"),
                  n = row_number(),
                  fecha_de_ultima_evaluacion  = format(as.Date(fecha_de_ultima_evaluacion ), format = "%d-%m-%y"),
                  # vr = if_else(is.na(vr), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(vr)),
@@ -227,7 +229,7 @@ registro_resultados_server <- function(id, rv, file_loader){
           relocate(informe, .after = last_col()) %>% 
           relocate(fecha_vencimiento, .before = informe) %>% 
           # relocate(estado_evaluacion_3d, .after = fecha_de_ultima_evaluacion) %>%
-          select(-apellidos)
+          select(-apellidos, -nombre_fantasia)
         
         if (filtro_resultados$competentes_final) {
           verde <- ""
@@ -289,12 +291,449 @@ registro_resultados_server <- function(id, rv, file_loader){
         
       })
       
+      # ================= BEGIN: INFORME MODAL =======================
+      # This section handles the evaluation report (informe) modal dialog
+      # To rollback: remove this entire section and restore the simple notification
+
       observeEvent(input$informe_click, {
         clicked_data <- input$informe_click
-        # clicked_data$id and clicked_data$rut are now available
-        # Do your action here (e.g., generate report, show modal, etc.)
-        showNotification(paste("Generating report for:", clicked_data$rut))
+        show_informe_modal(clicked_data$id, clicked_data$rut)
       })
+
+      # Function to display informe modal with evaluation report
+      show_informe_modal <- function(participant_id, participant_rut) {
+        ns <- session$ns
+
+        # Get participant data (using fake data for now matching mockup)
+        report_data <- get_fake_informe_data(participant_rut)
+
+        showModal(modalDialog(
+          size = "xl",
+          easyClose = FALSE,
+          footer = tagList(
+            actionButton(ns("informe_print"), "Imprimir", icon = icon("print"),
+                        class = "btn-primary"),
+            modalButton("Cerrar")
+          ),
+          fluidPage(
+            style = "padding: 0;",
+
+            # Header Section
+            div(
+              style = "background-color: #f7931e; color: white; padding: 15px; margin: -15px -15px 20px -15px;",
+              fluidRow(
+                column(9,
+                  h3(style = "margin: 0; font-size: 1.5rem;",
+                     "INFORME EVALUACIÓN INTEGRAL MINERA"),
+                  p(style = "margin: 5px 0 0 0; font-size: 0.9rem;",
+                    paste("RUT:", report_data$rut, "|",
+                          "Nombre:", report_data$nombre, "|",
+                          "Cargo:", report_data$cargo))
+                ),
+                column(3, align = "right",
+                  actionButton(ns("informe_expand"), "", icon = icon("expand"),
+                              class = "btn-sm btn-light",
+                              style = "margin-right: 5px;",
+                              title = "Abrir en nueva pestaña"),
+                  actionButton(ns("informe_download"), "", icon = icon("download"),
+                              class = "btn-sm btn-light",
+                              title = "Descargar PDF")
+                )
+              )
+            ),
+
+            # Scrollable Content Area
+            div(
+              style = "max-height: 65vh; overflow-y: auto; padding: 0 10px;",
+
+              # Información General Section
+              div(
+                style = "background-color: #f8f9fa; padding: 15px; margin-bottom: 20px; border-radius: 5px;",
+                h4(style = "color: #f7931e; margin-top: 0;", "INFORMACIÓN GENERAL"),
+                fluidRow(
+                  column(4,
+                    tags$table(style = "width: 100%; font-size: 0.85rem;",
+                      tags$tr(tags$td(tags$strong("Empresa:")),
+                             tags$td(report_data$empresa)),
+                      tags$tr(tags$td(tags$strong("RUT Empresa:")),
+                             tags$td(report_data$rut_empresa)),
+                      tags$tr(tags$td(tags$strong("Evaluado:")),
+                             tags$td(report_data$nombre))
+                    )
+                  ),
+                  column(4,
+                    tags$table(style = "width: 100%; font-size: 0.85rem;",
+                      tags$tr(tags$td(tags$strong("RUT:")),
+                             tags$td(report_data$rut)),
+                      tags$tr(tags$td(tags$strong("Cargo:")),
+                             tags$td(report_data$cargo)),
+                      tags$tr(tags$td(tags$strong("Perfil:")),
+                             tags$td(report_data$perfil))
+                    )
+                  ),
+                  column(4,
+                    tags$table(style = "width: 100%; font-size: 0.85rem;",
+                      tags$tr(tags$td(tags$strong("Fecha Evaluación:")),
+                             tags$td(report_data$fecha_evaluacion)),
+                      tags$tr(tags$td(tags$strong("Fecha Vencimiento:")),
+                             tags$td(report_data$fecha_vencimiento)),
+                      tags$tr(tags$td(tags$strong("Estado:")),
+                             tags$td(tags$span(style = paste0("color: ",
+                                    report_data$estado_color, "; font-weight: bold;"),
+                                    report_data$estado)))
+                    )
+                  )
+                )
+              ),
+
+              # Perfil de Riesgo Section with Two Charts
+              div(
+                style = "margin-bottom: 20px;",
+                h4(style = "color: #f7931e;", "PERFIL DE RIESGO"),
+                fluidRow(
+                  column(6,
+                    div(
+                      style = "background-color: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 5px; height: 300px;",
+                      h5(style = "text-align: center; margin-top: 0; color: #666;", "Identificación de Riesgos"),
+                      highchartOutput(ns("informe_chart_identificacion"), height = "240px")
+                    )
+                  ),
+                  column(6,
+                    div(
+                      style = "background-color: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 5px; height: 300px;",
+                      h5(style = "text-align: center; margin-top: 0; color: #666;", "Conductas de Riesgo"),
+                      highchartOutput(ns("informe_chart_conductas"), height = "240px")
+                    )
+                  )
+                )
+              ),
+
+              # Resultado Dimensiones Section with Two Tables
+              div(
+                style = "margin-bottom: 20px;",
+                h4(style = "color: #f7931e;", "RESULTADO DIMENSIONES"),
+                fluidRow(
+                  column(6,
+                    div(
+                      style = "background-color: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 5px;",
+                      h5(style = "text-align: center; color: #666; margin-top: 0;", "Identificación de Riesgos"),
+                      tags$table(
+                        style = "width: 100%; border-collapse: collapse; font-size: 0.85rem;",
+                        tags$thead(
+                          tags$tr(style = "background-color: #f8f9fa;",
+                            tags$th(style = "padding: 8px; border: 1px solid #ddd; text-align: left;", "Subdimensión"),
+                            tags$th(style = "padding: 8px; border: 1px solid #ddd; text-align: center; width: 60px;", "Nivel"),
+                            tags$th(style = "padding: 8px; border: 1px solid #ddd; text-align: left;", "Descripción")
+                          )
+                        ),
+                        tags$tbody(
+                          lapply(report_data$identificacion_subdimensiones, function(sub) {
+                            tags$tr(
+                              tags$td(style = "padding: 8px; border: 1px solid #ddd;", sub$nombre),
+                              tags$td(style = "padding: 8px; border: 1px solid #ddd; text-align: center;",
+                                tags$span(style = paste0("font-size: 20px; color: ", sub$face_color),
+                                  HTML(sub$face_icon)
+                                )
+                              ),
+                              tags$td(style = "padding: 8px; border: 1px solid #ddd; font-size: 0.8rem;", sub$descripcion)
+                            )
+                          })
+                        )
+                      )
+                    )
+                  ),
+                  column(6,
+                    div(
+                      style = "background-color: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 5px;",
+                      h5(style = "text-align: center; color: #666; margin-top: 0;", "Conductas de Riesgo"),
+                      tags$table(
+                        style = "width: 100%; border-collapse: collapse; font-size: 0.85rem;",
+                        tags$thead(
+                          tags$tr(style = "background-color: #f8f9fa;",
+                            tags$th(style = "padding: 8px; border: 1px solid #ddd; text-align: left;", "Subdimensión"),
+                            tags$th(style = "padding: 8px; border: 1px solid #ddd; text-align: center; width: 60px;", "Nivel"),
+                            tags$th(style = "padding: 8px; border: 1px solid #ddd; text-align: left;", "Descripción")
+                          )
+                        ),
+                        tags$tbody(
+                          lapply(report_data$conductas_subdimensiones, function(sub) {
+                            tags$tr(
+                              tags$td(style = "padding: 8px; border: 1px solid #ddd;", sub$nombre),
+                              tags$td(style = "padding: 8px; border: 1px solid #ddd; text-align: center;",
+                                tags$span(style = paste0("font-size: 20px; color: ", sub$face_color),
+                                  HTML(sub$face_icon)
+                                )
+                              ),
+                              tags$td(style = "padding: 8px; border: 1px solid #ddd; font-size: 0.8rem;", sub$descripcion)
+                            )
+                          })
+                        )
+                      )
+                    )
+                  )
+                )
+              ),
+
+              # Resultado Final Section
+              div(
+                style = "margin-bottom: 20px;",
+                h4(style = "color: #f7931e;", "RESULTADO FINAL"),
+                div(
+                  style = "background-color: #fff; padding: 20px; border: 1px solid #ddd; border-radius: 5px;",
+                  fluidRow(
+                    column(3, align = "center",
+                      div(
+                        style = paste0("background-color: ", report_data$resultado_final_color,
+                                      "; color: white; padding: 15px; border-radius: 5px; ",
+                                      "font-weight: bold; font-size: 1.1rem;"),
+                        report_data$resultado_final
+                      )
+                    ),
+                    column(2, align = "center",
+                      tags$span(
+                        style = paste0("font-size: 48px; color: ", report_data$resultado_final_face_color),
+                        HTML(report_data$resultado_final_face)
+                      )
+                    ),
+                    column(7,
+                      div(
+                        style = "background-color: #f8f9fa; padding: 15px; border-radius: 5px;",
+                        tags$p(style = "margin: 0; font-size: 0.9rem;",
+                          tags$strong("Observación del Evaluador:"),
+                          tags$br(),
+                          report_data$resultado_final_texto
+                        )
+                      )
+                    )
+                  )
+                )
+              ),
+
+
+              # Observaciones Section
+              div(
+                style = "margin-bottom: 10px;",
+                h4(style = "color: #f7931e;", "OBSERVACIONES"),
+                div(
+                  style = "background-color: #f8f9fa; padding: 15px; border: 1px solid #ddd; border-radius: 5px; font-size: 0.9rem;",
+                  tags$p(style = "margin: 0;", report_data$observaciones)
+                )
+              )
+            )
+          )
+        ))
+      }
+
+      # Helper function to get face icon and color based on level (1-5)
+      get_face_icon <- function(level) {
+        faces <- list(
+          "1" = list(icon = "&#128545;", color = "#dc3545"), # Angry face - Red
+          "2" = list(icon = "&#128577;", color = "#fd7e14"), # Frowning face - Orange
+          "3" = list(icon = "&#128528;", color = "#ffc107"), # Neutral face - Yellow
+          "4" = list(icon = "&#128578;", color = "#20c997"), # Slight smile - Light green
+          "5" = list(icon = "&#128512;", color = "#28a745")  # Big smile - Green
+        )
+        return(faces[[as.character(level)]])
+      }
+
+      # Function to generate fake data matching the mockup
+      get_fake_informe_data <- function(rut) {
+        list(
+          empresa = "MINERA EJEMPLO S.A.",
+          rut_empresa = "76.123.456-7",
+          nombre = "JUAN CARLOS PÉREZ GONZÁLEZ",
+          rut = rut,
+          cargo = "OPERADOR DE EQUIPO PESADO",
+          perfil = "TÉCNICO",
+          fecha_evaluacion = "15-03-2026",
+          fecha_vencimiento = "15-03-2027",
+          estado = "VIGENTE",
+          estado_color = "#28a745",
+
+          # Resultado Final
+          resultado_final = "APROBADO",
+          resultado_final_color = "#28a745",
+          resultado_final_face = "&#128512;", # Smiling face
+          resultado_final_face_color = "#28a745",
+          resultado_final_texto = "El evaluado ha demostrado competencias satisfactorias en todas las dimensiones evaluadas. Presenta un perfil de riesgo bajo y está apto para desempeñar las funciones del cargo de manera segura y eficiente.",
+
+          # Identificación de Riesgos - Chart Data (4 subdimensions, scale 1-5)
+          identificacion_chart_data = list(
+            categories = c("Uso de EPP", "Acciones\nInseguras", "Condiciones\nInseguras", "Controles\nCríticos"),
+            values = c(4, 5, 4, 4)
+          ),
+
+          # Conductas de Riesgo - Chart Data (5 subdimensions, scale 1-5)
+          conductas_chart_data = list(
+            categories = c("Apuro", "Desconcentración", "Exceso de\nConfianza", "Impulsividad", "Incumplimiento\nde Normas"),
+            values = c(4, 5, 4, 5, 4)
+          ),
+
+          # Identificación de Riesgos - Subdimensions Table
+          identificacion_subdimensiones = list(
+            list(
+              nombre = "Uso de EPP",
+              nivel = 4,
+              face_icon = get_face_icon(4)$icon,
+              face_color = get_face_icon(4)$color,
+              descripcion = "Utiliza correctamente el equipo de protección personal. Demuestra conocimiento en el uso y mantención de EPP."
+            ),
+            list(
+              nombre = "Acciones Inseguras",
+              nivel = 5,
+              face_icon = get_face_icon(5)$icon,
+              face_color = get_face_icon(5)$color,
+              descripcion = "No presenta acciones inseguras. Sigue procedimientos establecidos de manera consistente."
+            ),
+            list(
+              nombre = "Condiciones Inseguras",
+              nivel = 4,
+              face_icon = get_face_icon(4)$icon,
+              face_color = get_face_icon(4)$color,
+              descripcion = "Identifica y reporta condiciones inseguras en el área de trabajo de manera proactiva."
+            ),
+            list(
+              nombre = "Controles Críticos",
+              nivel = 4,
+              face_icon = get_face_icon(4)$icon,
+              face_color = get_face_icon(4)$color,
+              descripcion = "Reconoce y aplica controles críticos definidos para su área de trabajo."
+            )
+          ),
+
+          # Conductas de Riesgo - Subdimensions Table
+          conductas_subdimensiones = list(
+            list(
+              nombre = "Apuro",
+              nivel = 4,
+              face_icon = get_face_icon(4)$icon,
+              face_color = get_face_icon(4)$color,
+              descripcion = "Mantiene ritmo de trabajo adecuado sin apresurarse. Prioriza la seguridad sobre la productividad."
+            ),
+            list(
+              nombre = "Desconcentración",
+              nivel = 5,
+              face_icon = get_face_icon(5)$icon,
+              face_color = get_face_icon(5)$color,
+              descripcion = "Mantiene concentración durante la jornada laboral. No presenta distracciones significativas."
+            ),
+            list(
+              nombre = "Exceso de Confianza",
+              nivel = 4,
+              face_icon = get_face_icon(4)$icon,
+              face_color = get_face_icon(4)$color,
+              descripcion = "Mantiene nivel apropiado de precaución. No subestima riesgos potenciales."
+            ),
+            list(
+              nombre = "Impulsividad",
+              nivel = 5,
+              face_icon = get_face_icon(5)$icon,
+              face_color = get_face_icon(5)$color,
+              descripcion = "Toma decisiones de manera reflexiva. Evalúa riesgos antes de actuar."
+            ),
+            list(
+              nombre = "Incumplimiento de Normas",
+              nivel = 4,
+              face_icon = get_face_icon(4)$icon,
+              face_color = get_face_icon(4)$color,
+              descripcion = "Cumple con las normas y procedimientos de seguridad establecidos."
+            )
+          ),
+
+          observaciones = "El trabajador ha completado satisfactoriamente todas las evaluaciones requeridas para su cargo. Se recomienda renovación de evaluación 30 días antes del vencimiento. Cualquier cambio de cargo o función requerirá nueva evaluación integral."
+        )
+      }
+
+      # Render chart for Identificación de Riesgos (bar chart, scale 1-5)
+      output$informe_chart_identificacion <- renderHighchart({
+        req(input$informe_click)
+
+        clicked_data <- input$informe_click
+        report_data <- get_fake_informe_data(clicked_data$rut)
+
+        highchart() %>%
+          hc_chart(type = "column") %>%
+          hc_title(text = "") %>%
+          hc_xAxis(
+            categories = report_data$identificacion_chart_data$categories,
+            title = list(text = "")
+          ) %>%
+          hc_yAxis(
+            title = list(text = "Nivel"),
+            min = 1,
+            max = 5,
+            tickInterval = 1
+          ) %>%
+          hc_plotOptions(
+            column = list(
+              colorByPoint = TRUE,
+              dataLabels = list(enabled = TRUE, format = "{point.y}")
+            )
+          ) %>%
+          hc_colors(c("#28a745", "#28a745", "#28a745", "#28a745")) %>%
+          hc_add_series(
+            name = "Nivel",
+            data = report_data$identificacion_chart_data$values,
+            showInLegend = FALSE
+          ) %>%
+          hc_tooltip(
+            pointFormat = '<b>Nivel: {point.y}</b>'
+          )
+      })
+
+      # Render radar chart for Conductas de Riesgo (scale 1-5)
+      output$informe_chart_conductas <- renderHighchart({
+        req(input$informe_click)
+
+        clicked_data <- input$informe_click
+        report_data <- get_fake_informe_data(clicked_data$rut)
+
+        highchart() %>%
+          hc_chart(polar = TRUE, type = "line") %>%
+          hc_title(text = "") %>%
+          hc_xAxis(
+            categories = report_data$conductas_chart_data$categories,
+            tickmarkPlacement = "on",
+            lineWidth = 0
+          ) %>%
+          hc_yAxis(
+            gridLineInterpolation = "polygon",
+            lineWidth = 0,
+            min = 1,
+            max = 5,
+            tickInterval = 1
+          ) %>%
+          hc_series(
+            list(
+              name = "Nivel",
+              data = report_data$conductas_chart_data$values,
+              pointPlacement = "on",
+              color = "#0079b5"
+            )
+          ) %>%
+          hc_tooltip(
+            shared = TRUE,
+            pointFormat = '<span style="color:{series.color}">{series.name}: <b>{point.y}</b><br/>'
+          ) %>%
+          hc_legend(enabled = FALSE)
+      })
+
+      # Handle print button
+      observeEvent(input$informe_print, {
+        showNotification("Función de impresión en desarrollo", type = "message")
+      })
+
+      # Handle expand button (open in new tab)
+      observeEvent(input$informe_expand, {
+        showNotification("Función de expandir en desarrollo", type = "message")
+      })
+
+      # Handle download PDF button
+      observeEvent(input$informe_download, {
+        showNotification("Función de descarga PDF en desarrollo", type = "message")
+      })
+
+      # ================= END: INFORME MODAL =======================
       
       output$fecha_ultima_actualizacion <- renderText({
         # fecha <- max(unique(resultados_df()$fecha_carga_datos))

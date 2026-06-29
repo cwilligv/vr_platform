@@ -13,7 +13,7 @@ options(
 server = function(input, output, session) {
   
   # telemetry$start_session(
-  #   track_inputs = FALSE,
+  #   track_inputs = FALSE, 
   #   navigation_input_id = "sidebar_menu",
   #   username = session$userData$auth0_info$name
   # )
