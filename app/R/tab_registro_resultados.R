@@ -190,6 +190,12 @@ registro_resultados_server <- function(id, rv, file_loader){
         print("rendering table resultados")
         # browser()
         table <- resultados_df() %>% 
+          mutate(
+            conocimientos_en_seguridad = if_else(rut %in% c('10694089-4','15454238-8'), 50, conocimientos_en_seguridad)
+          ) %>%
+          mutate(
+            conocimientos_en_seguridad = if_else(rut %in% c('16353045-7','15569543-9'), 75, conocimientos_en_seguridad)
+          ) %>%
           select(-id_empresa,-psicolaboral_fecha,-conductas_de_riesgo_fecha,-vr_fecha,-conocimientos_en_seguridad_fecha,
                  -tecnica_teorica_fecha,-tecnica_practica_fecha,-gestion_fecha,-fecha_examen_presencial,-fecha_examen_on_line, 
                  -fecha_carga_datos, -fecha_vencimiento_3d, -psicolaboral_categoria, -vr_categoria, -conductas_de_riesgo_categoria,
@@ -216,12 +222,16 @@ registro_resultados_server <- function(id, rv, file_loader){
                  # tecnica_practica = if_else(is.na(tecnica_practica), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(tecnica_practica)),
                  # gestion = if_else(is.na(gestion), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(gestion)),
                  # certificacion = if_else(is.na(certificacion), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(certificacion)),
-                 conductas_de_riesgo = if_else(conductas_de_riesgo == 'COMPETENTE', "C", 
+                 conductas_de_riesgo = if_else(conductas_de_riesgo == 'COMPETENTE', "C",
                                               if_else(conductas_de_riesgo == 'COMPETENTE CON OBSERVACIONES', "C/O",
-                                                      if_else(conductas_de_riesgo == 'NO COMPETENTE', "N/C", "")))
-                 # resultado_final_3d = if_else(resultado_final_3d == 'COMPETENTE', as.character(icon("smile", class = "fa-solid", style = "font-size: 24px;color: #77C151;")), 
-                 #                           if_else(resultado_final_3d == 'COMPETENTE CON OBSERVACIONES', as.character(icon("meh", class = "fa-solid", style = "font-size: 24px;color: #F1C429;")),
-                 #                                   if_else(resultado_final_3d == 'NO COMPETENTE', as.character(icon("frown", class = "fa-solid", style = "font-size: 24px;color: #E4465C;")),as.character(""))))
+                                                      if_else(conductas_de_riesgo == 'NO COMPETENTE', "N/C", ""))),
+                 conocimientos_en_seguridad = {
+                   val <- as.numeric(conocimientos_en_seguridad)
+                   if_else(is.na(val), "",
+                     if_else(val <= 69, as.character(icon("smile", class = "fa-solid", style = "font-size: 24px;color: #77C151;")),
+                       if_else(val <= 79, as.character(icon("meh", class = "fa-solid", style = "font-size: 24px;color: #F1C429;")),
+                         as.character(icon("frown", class = "fa-solid", style = "font-size: 24px;color: #E4465C;")))))
+                 }
           ) %>%
           relocate(n) %>%
           relocate(fecha_de_ultima_evaluacion, .after = cargo) %>%
@@ -320,25 +330,26 @@ registro_resultados_server <- function(id, rv, file_loader){
 
             # Header Section
             div(
-              style = "background-color: #f7931e; color: white; padding: 15px; margin: -15px -15px 20px -15px;",
-              fluidRow(
-                column(9,
-                  h3(style = "margin: 0; font-size: 1.5rem;",
-                     "INFORME EVALUACIÓN INTEGRAL MINERA"),
-                  p(style = "margin: 5px 0 0 0; font-size: 0.9rem;",
-                    paste("RUT:", report_data$rut, "|",
-                          "Nombre:", report_data$nombre, "|",
-                          "Cargo:", report_data$cargo))
+              style = "background-color: #ffffff; padding: 20px 25px; margin: -15px -15px 20px -15px; border-bottom: 1px solid #e0e0e0;",
+              div(
+                style = "display: flex; align-items: center; justify-content: space-between;",
+                div(
+                  h3(style = "margin: 0; font-size: 2rem; font-weight: bold;",
+                     tags$span(style = "color: #333;", "MERC "),
+                     tags$span(style = "color: #1a8ccc;", "VRisk")
+                  ),
+                  p(style = "margin: 5px 0 0 0; font-size: 1rem; color: #555;",
+                    "Identificación de Riesgos - Realidad Virtual Inmersiva")
                 ),
-                column(3, align = "right",
-                  actionButton(ns("informe_expand"), "", icon = icon("expand"),
-                              class = "btn-sm btn-light",
-                              style = "margin-right: 5px;",
-                              title = "Abrir en nueva pestaña"),
-                  actionButton(ns("informe_download"), "", icon = icon("download"),
-                              class = "btn-sm btn-light",
-                              title = "Descargar PDF")
+                div(
+                  style = "flex-shrink: 0;",
+                  tags$img(src = "merc_720.png", style = "height: 60px;")
                 )
+              ),
+              div(
+                style = "display: none;",
+                actionButton(ns("informe_expand"), "", icon = icon("expand")),
+                actionButton(ns("informe_download"), "", icon = icon("download"))
               )
             ),
 
@@ -652,7 +663,7 @@ registro_resultados_server <- function(id, rv, file_loader){
         report_data <- get_fake_informe_data(clicked_data$rut)
 
         highchart() %>%
-          hc_chart(type = "column") %>%
+          hc_chart(type = "bar") %>%
           hc_title(text = "") %>%
           hc_xAxis(
             categories = report_data$identificacion_chart_data$categories,
@@ -665,7 +676,7 @@ registro_resultados_server <- function(id, rv, file_loader){
             tickInterval = 1
           ) %>%
           hc_plotOptions(
-            column = list(
+            bar = list(
               colorByPoint = TRUE,
               dataLabels = list(enabled = TRUE, format = "{point.y}")
             )
