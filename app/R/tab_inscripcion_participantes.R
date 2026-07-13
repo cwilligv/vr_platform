@@ -156,7 +156,9 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                                 id_empresa = as.numeric(session$userData$id_empresa),
                                 rut = rutifier::rut_hyphen(input$rut),
                                 nombres = input$nombres,
-                                apellidos = input$apellidos, 
+                                apellidos = input$apellidos,
+                                fecha_nacimiento = as.character(ifelse(!isTruthy(input$fecha_nacimiento), NA, as.character(input$fecha_nacimiento))),
+                                sexo = input$sexo,
                                 telefono = input$telefono,
                                 email = trimws(input$email),
                                 centro_de_costo = input$centrocosto,
@@ -294,6 +296,13 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
          }
          return(NULL)  # NULL indicates validation passed
        })
+       iv$add_rule("fecha_nacimiento", sv_required(message = "Debe ingresar fecha de nacimiento."))
+       iv$add_rule("fecha_nacimiento", function(value) {
+         if (isTruthy(value) && ymd(value) >= lubridate::today(tzone = "Chile/Continental")) {
+           "La fecha de nacimiento debe ser anterior a hoy."
+         }
+       })
+       iv$add_rule("sexo", sv_required(message = "Debe seleccionar el sexo."))
        # iv$add_rule("fecha_online", function(value){
        #   if ((length(value) == 0) && (length(input$fecha_presencial) == 0)) {
        #     "Debe ingresar una fecha de inicio de Evaluaciones."
@@ -483,6 +492,8 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
              updateTextInput(session, "rut", value = SQL_df[input$responses_table_rows_selected, "rut"])
              updateTextInput(session, "nombres", value = SQL_df[input$responses_table_rows_selected, "nombres"])
              updateTextInput(session, "apellidos", value = SQL_df[input$responses_table_rows_selected, "apellidos"])
+             updateDateInput(session, "fecha_nacimiento", value = SQL_df[input$responses_table_rows_selected, "fecha_nacimiento"])
+             updateSelectInput(session, "sexo", selected = SQL_df[input$responses_table_rows_selected, "sexo"])
              updateTextInput(session, "telefono", value = SQL_df[input$responses_table_rows_selected, "telefono"])
              updateTextInput(session, "email", value = SQL_df[input$responses_table_rows_selected, "email"])
              updateSelectInput(session, "centrocosto", choices = get_centro_de_costos_por_participante(SQL_df[input$responses_table_rows_selected, "id"]), selected = SQL_df[input$responses_table_rows_selected, "centro_de_costo"])
@@ -572,10 +583,12 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
          vr <- 0
          tt <- 0
          ge <- 0
-         sqlq <- glue::glue_sql("UPDATE participantes set 
+         sqlq <- glue::glue_sql("UPDATE participantes set
                                  rut = {input$rut},
-                                 nombres = {input$nombres}, 
+                                 nombres = {input$nombres},
                                  apellidos = {input$apellidos},
+                                 fecha_nacimiento = {as.character(input$fecha_nacimiento)},
+                                 sexo = {input$sexo},
                                  telefono = {input$telefono},
                                  email = {input$email},
                                  centro_de_costo = {input$centrocosto},
@@ -604,7 +617,7 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
        
        output$responses_table <- DT::renderDT({
          # browser()
-         table <- responses_df() %>% select(-id_preparacion, -id_empresa, -centro_de_costo, -id_coach, -es_horario_especial, -id_participante) %>% 
+         table <- responses_df() %>% select(-id_preparacion, -id_empresa, -centro_de_costo, -id_coach, -es_horario_especial, -id_participante, -fecha_nacimiento, -sexo) %>% 
            mutate(nombres = paste0("<strong>", str_to_title(nombres), "</strong>", "<br>", "<i>", str_to_title(apellidos), "</i>"),
                   #apellidos = str_to_title(apellidos),
                   solicitante = paste0("<strong>", str_to_lower(solicitante_email), "</strong>", "<br>", "<i>", solicitante_telefono, "</i>"),
@@ -728,6 +741,8 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                    fluidRow(column(6, textInput(ns("rut"), labelMandatory("Rut"), placeholder = "ej: 12345678-9"))),
                    fluidRow(column(6, textInput(ns("nombres"), labelMandatory("Nombres"), placeholder = "")),
                             column(6, textInput(ns("apellidos"), labelMandatory("Apellidos"), placeholder = ""))),
+                   fluidRow(column(6, dateInput(ns("fecha_nacimiento"), labelMandatory("Fecha de Nacimiento"), language = "es", weekstart = 1, autoclose = T, value = NA, format = "dd-mm-yyyy")),
+                            column(6, selectInput(ns("sexo"), labelMandatory("Sexo"), choices = c("Seleccionar..." = "", "Masculino" = "M", "Femenino" = "F")))),
                    fluidRow(column(6, textInput(ns("telefono"), labelMandatory("Teléfono"), placeholder = "")),
                             column(6, textInput(ns("email"), labelMandatory("Email"), placeholder = ""))),
                    fluidRow(column(6, selectInput(ns("centrocosto"), "Contrato/Proyecto", choices = NULL)),
@@ -854,6 +869,8 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                    fluidRow(column(6, textInput(ns("rut"), labelMandatory("Rut"), placeholder = "ej: 12345678-9"))),
                    fluidRow(column(6, textInput(ns("nombres"), labelMandatory("Nombres"), placeholder = "")),
                             column(6, textInput(ns("apellidos"), labelMandatory("Apellidos"), placeholder = ""))),
+                   fluidRow(column(6, dateInput(ns("fecha_nacimiento"), labelMandatory("Fecha de Nacimiento"), language = "es", weekstart = 1, autoclose = T, value = NA, format = "dd-mm-yyyy")),
+                            column(6, selectInput(ns("sexo"), labelMandatory("Sexo"), choices = c("Seleccionar..." = "", "Masculino" = "M", "Femenino" = "F")))),
                    fluidRow(column(6, textInput(ns("telefono"), labelMandatory("Teléfono"), placeholder = "")),
                             column(6, textInput(ns("email"), labelMandatory("Email"), placeholder = ""))),
                    fluidRow(column(6, selectInput(ns("centrocosto"), "Contrato/Proyecto", choices = NULL)),
@@ -920,7 +937,7 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
              tags$div(id = session$ns("constraintPlaceholder1")),
              title = ptitle,
              footer = conditionalPanel(
-               condition = paste0('input[\'', ns('inTabset'), "\'] == \'Evaluaciones\'"),
+               condition = paste0('input[\'', ns('inTabset'), "\'] == \'Agendamiento\'"),
                modalButton("Cancelar"),
                actionButton(ns(button_id), "Guardar")
              ),
@@ -1006,10 +1023,12 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
        
        observe({
          if (!editing_on()) {
-           toggleState("submit", (input$rut != "" | is.null(input$rut)) && 
+           toggleState("submit", (input$rut != "" | is.null(input$rut)) &&
                          (input$nombres != "" | is.null(input$nombres)) &&
                          (input$apellidos != "" | is.null(input$apellidos)) &&
-                         (input$telefono != "" | is.null(input$telefono)) && 
+                         (isTruthy(input$fecha_nacimiento)) &&
+                         (input$sexo != "" && !is.null(input$sexo)) &&
+                         (input$telefono != "" | is.null(input$telefono)) &&
                          (input$email != "" | is.null(input$email)) &&
                          (input$cargo != "" | is.null(input$cargo)) &&
                          # (length(input$checkBoxGroup) > 0) &&
