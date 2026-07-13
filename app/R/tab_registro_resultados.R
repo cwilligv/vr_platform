@@ -202,7 +202,7 @@ registro_resultados_server <- function(id, rv, file_loader){
                  -conocimientos_en_seguridad_categoria, -tecnica_teorica_categoria, -tecnica_practica_categoria, -gestion_categoria, -perfil_3d,
                  -dim_seguridad, -dim_seguridad_categoria, -dim_psicolaboral, -dim_psicolaboral_fecha, -dim_psicolaboral_categoria, -dim_tecnica, 
                  -dim_tecnica_categoria, -estado_vigente_vencido, -estado_evaluacion_3d, -updated_by,
-                 -tecnica_teorica, -tecnica_practica, -gestion, -certificacion, -resultado_final_3d, -vr) %>% 
+                 -tecnica_teorica, -tecnica_practica, -gestion, -certificacion, -resultado_final_3d, -vr, -conductas_de_riesgo, -psicolaboral) %>% 
           mutate(nombres = paste0("<strong>", str_to_title(nombres), "</strong>", "<br>", "<i>", str_to_title(apellidos), "</i>"),
                  cargo = paste0("<strong>", str_to_title(cargo), "</strong>", "<br>", "<i>", str_to_title(nombre_fantasia), "</i>"),
                  n = row_number(),
@@ -222,9 +222,9 @@ registro_resultados_server <- function(id, rv, file_loader){
                  # tecnica_practica = if_else(is.na(tecnica_practica), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(tecnica_practica)),
                  # gestion = if_else(is.na(gestion), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(gestion)),
                  # certificacion = if_else(is.na(certificacion), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(certificacion)),
-                 conductas_de_riesgo = if_else(conductas_de_riesgo == 'COMPETENTE', "C",
-                                              if_else(conductas_de_riesgo == 'COMPETENTE CON OBSERVACIONES', "C/O",
-                                                      if_else(conductas_de_riesgo == 'NO COMPETENTE', "N/C", ""))),
+                 # conductas_de_riesgo = if_else(conductas_de_riesgo == 'COMPETENTE', "C",
+                 #                              if_else(conductas_de_riesgo == 'COMPETENTE CON OBSERVACIONES', "C/O",
+                 #                                      if_else(conductas_de_riesgo == 'NO COMPETENTE', "N/C", ""))),
                  conocimientos_en_seguridad = {
                    val <- as.numeric(conocimientos_en_seguridad)
                    if_else(is.na(val), "",
@@ -256,9 +256,8 @@ registro_resultados_server <- function(id, rv, file_loader){
             rojo <- "#E4465C"
           }
         }
-        
         # names(table) <- c("n","id", "Rut", "Participante", "Cargo", "Fecha Evaluación", "PS","CO", "CS", "VR", "Final")
-        names(table) <- c("n","id", "Rut", "Participante", "Cargo", "Fecha <br>Evaluación", "IR","CR", "Resultado <br>Final", "Fecha <br>vencimiento", "Informe")
+        names(table) <- c("n","id", "Rut", "Participante", "Cargo", "Fecha <br>Evaluación", "Resultado <br>Final", "Fecha <br>vencimiento", "Informe")
         
         table <- datatable(table,
                            #filter = "top",
@@ -397,89 +396,97 @@ registro_resultados_server <- function(id, rv, file_loader){
                 )
               ),
 
-              # Perfil de Riesgo Section with Two Charts
+              # Perfil de Riesgo Section with Two Chart Types
               div(
                 style = "margin-bottom: 20px;",
-                h4(style = "color: #f7931e;", "PERFIL DE RIESGO"),
+                h4(style = "color: #f7931e;", "PERFIL DE RIESGO - IDENTIFICACIÓN DE RIESGOS"),
                 fluidRow(
                   column(6,
                     div(
                       style = "background-color: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 5px; height: 300px;",
-                      h5(style = "text-align: center; margin-top: 0; color: #666;", "Identificación de Riesgos"),
+                      h5(style = "text-align: center; margin-top: 0; color: #666;", "Puntuación por Subdimensión"),
                       highchartOutput(ns("informe_chart_identificacion"), height = "240px")
                     )
                   ),
                   column(6,
                     div(
                       style = "background-color: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 5px; height: 300px;",
-                      h5(style = "text-align: center; margin-top: 0; color: #666;", "Conductas de Riesgo"),
-                      highchartOutput(ns("informe_chart_conductas"), height = "240px")
+                      h5(style = "text-align: center; margin-top: 0; color: #666;", "Perfil de Competencias"),
+                      highchartOutput(ns("informe_chart_identificacion_radar"), height = "240px")
                     )
                   )
                 )
               ),
 
-              # Resultado Dimensiones Section with Two Tables
+              # Resultado Dimensiones Section - Full Width
               div(
                 style = "margin-bottom: 20px;",
-                h4(style = "color: #f7931e;", "RESULTADO DIMENSIONES"),
-                fluidRow(
-                  column(6,
-                    div(
-                      style = "background-color: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 5px;",
-                      h5(style = "text-align: center; color: #666; margin-top: 0;", "Identificación de Riesgos"),
-                      tags$table(
-                        style = "width: 100%; border-collapse: collapse; font-size: 0.85rem;",
-                        tags$thead(
-                          tags$tr(style = "background-color: #f8f9fa;",
-                            tags$th(style = "padding: 8px; border: 1px solid #ddd; text-align: left;", "Subdimensión"),
-                            tags$th(style = "padding: 8px; border: 1px solid #ddd; text-align: center; width: 60px;", "Nivel"),
-                            tags$th(style = "padding: 8px; border: 1px solid #ddd; text-align: left;", "Descripción")
-                          )
-                        ),
-                        tags$tbody(
-                          lapply(report_data$identificacion_subdimensiones, function(sub) {
-                            tags$tr(
-                              tags$td(style = "padding: 8px; border: 1px solid #ddd;", sub$nombre),
-                              tags$td(style = "padding: 8px; border: 1px solid #ddd; text-align: center;",
-                                tags$span(style = paste0("font-size: 20px; color: ", sub$face_color),
-                                  HTML(sub$face_icon)
-                                )
-                              ),
-                              tags$td(style = "padding: 8px; border: 1px solid #ddd; font-size: 0.8rem;", sub$descripcion)
-                            )
-                          })
-                        )
+                h4(style = "color: #f7931e;", "RESULTADO DIMENSIONES - IDENTIFICACIÓN DE RIESGOS"),
+                div(
+                  style = "background-color: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 5px;",
+                  tags$table(
+                    style = "width: 100%; border-collapse: collapse; font-size: 0.85rem;",
+                    tags$thead(
+                      tags$tr(style = "background-color: #f8f9fa;",
+                        tags$th(style = "padding: 8px; border: 1px solid #ddd; text-align: left;", "Subdimensión"),
+                        tags$th(style = "padding: 8px; border: 1px solid #ddd; text-align: center; width: 60px;", "Nivel"),
+                        tags$th(style = "padding: 8px; border: 1px solid #ddd; text-align: left;", "Descripción")
                       )
+                    ),
+                    tags$tbody(
+                      lapply(report_data$identificacion_subdimensiones, function(sub) {
+                        tags$tr(
+                          tags$td(style = "padding: 8px; border: 1px solid #ddd;", sub$nombre),
+                          tags$td(style = "padding: 8px; border: 1px solid #ddd; text-align: center;",
+                            tags$span(style = paste0("font-size: 20px; color: ", sub$face_color),
+                              HTML(sub$face_icon)
+                            )
+                          ),
+                          tags$td(style = "padding: 8px; border: 1px solid #ddd; font-size: 0.8rem;", sub$descripcion)
+                        )
+                      })
                     )
-                  ),
-                  column(6,
-                    div(
-                      style = "background-color: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 5px;",
-                      h5(style = "text-align: center; color: #666; margin-top: 0;", "Conductas de Riesgo"),
-                      tags$table(
-                        style = "width: 100%; border-collapse: collapse; font-size: 0.85rem;",
-                        tags$thead(
-                          tags$tr(style = "background-color: #f8f9fa;",
-                            tags$th(style = "padding: 8px; border: 1px solid #ddd; text-align: left;", "Subdimensión"),
-                            tags$th(style = "padding: 8px; border: 1px solid #ddd; text-align: center; width: 60px;", "Nivel"),
-                            tags$th(style = "padding: 8px; border: 1px solid #ddd; text-align: left;", "Descripción")
-                          )
-                        ),
-                        tags$tbody(
-                          lapply(report_data$conductas_subdimensiones, function(sub) {
-                            tags$tr(
-                              tags$td(style = "padding: 8px; border: 1px solid #ddd;", sub$nombre),
-                              tags$td(style = "padding: 8px; border: 1px solid #ddd; text-align: center;",
-                                tags$span(style = paste0("font-size: 20px; color: ", sub$face_color),
-                                  HTML(sub$face_icon)
-                                )
-                              ),
-                              tags$td(style = "padding: 8px; border: 1px solid #ddd; font-size: 0.8rem;", sub$descripcion)
-                            )
-                          })
-                        )
+                  )
+                )
+              ),
+
+              # Plan de Mejora Section
+              div(
+                style = "margin-bottom: 20px;",
+                h4(style = "color: #f7931e;", "PLAN DE MEJORA Y RECOMENDACIONES"),
+                div(
+                  style = "background-color: #fff; padding: 20px; border: 1px solid #ddd; border-radius: 5px;",
+                  tags$table(
+                    style = "width: 100%; border-collapse: collapse; font-size: 0.85rem;",
+                    tags$thead(
+                      tags$tr(style = "background-color: #f8f9fa;",
+                        tags$th(style = "padding: 8px; border: 1px solid #ddd; text-align: left; width: 20%;", "Subdimensión"),
+                        tags$th(style = "padding: 8px; border: 1px solid #ddd; text-align: center; width: 10%;", "Estado"),
+                        tags$th(style = "padding: 8px; border: 1px solid #ddd; text-align: left; width: 40%;", "Recomendación"),
+                        tags$th(style = "padding: 8px; border: 1px solid #ddd; text-align: left; width: 30%;", "Acciones Sugeridas")
                       )
+                    ),
+                    tags$tbody(
+                      lapply(report_data$plan_mejora, function(plan) {
+                        tags$tr(
+                          tags$td(style = "padding: 8px; border: 1px solid #ddd;", plan$subdimension),
+                          tags$td(style = "padding: 8px; border: 1px solid #ddd; text-align: center;",
+                            tags$span(
+                              style = paste0("padding: 4px 8px; border-radius: 3px; font-weight: bold; ",
+                                           "background-color: ", plan$estado_bg, "; color: ", plan$estado_color, ";"),
+                              plan$estado
+                            )
+                          ),
+                          tags$td(style = "padding: 8px; border: 1px solid #ddd; font-size: 0.8rem;", plan$recomendacion),
+                          tags$td(style = "padding: 8px; border: 1px solid #ddd; font-size: 0.8rem;",
+                            tags$ul(style = "margin: 0; padding-left: 20px;",
+                              lapply(plan$acciones, function(accion) {
+                                tags$li(accion)
+                              })
+                            )
+                          )
+                        )
+                      })
                     )
                   )
                 )
@@ -574,12 +581,6 @@ registro_resultados_server <- function(id, rv, file_loader){
             values = c(4, 5, 4, 4)
           ),
 
-          # Conductas de Riesgo - Chart Data (5 subdimensions, scale 1-5)
-          conductas_chart_data = list(
-            categories = c("Apuro", "Desconcentración", "Exceso de\nConfianza", "Impulsividad", "Incumplimiento\nde Normas"),
-            values = c(4, 5, 4, 5, 4)
-          ),
-
           # Identificación de Riesgos - Subdimensions Table
           identificacion_subdimensiones = list(
             list(
@@ -612,42 +613,55 @@ registro_resultados_server <- function(id, rv, file_loader){
             )
           ),
 
-          # Conductas de Riesgo - Subdimensions Table
-          conductas_subdimensiones = list(
+          # Plan de Mejora - Recommendations per subdimension
+          plan_mejora = list(
             list(
-              nombre = "Apuro",
-              nivel = 4,
-              face_icon = get_face_icon(4)$icon,
-              face_color = get_face_icon(4)$color,
-              descripcion = "Mantiene ritmo de trabajo adecuado sin apresurarse. Prioriza la seguridad sobre la productividad."
+              subdimension = "Uso de EPP",
+              estado = "Bueno",
+              estado_bg = "#d4edda",
+              estado_color = "#155724",
+              recomendacion = "Continuar con las prácticas actuales de uso correcto de EPP. Reforzar el conocimiento sobre nuevos equipos.",
+              acciones = list(
+                "Asistir a capacitación trimestral sobre nuevos EPP",
+                "Realizar inspecciones diarias del estado de EPP",
+                "Compartir mejores prácticas con el equipo"
+              )
             ),
             list(
-              nombre = "Desconcentración",
-              nivel = 5,
-              face_icon = get_face_icon(5)$icon,
-              face_color = get_face_icon(5)$color,
-              descripcion = "Mantiene concentración durante la jornada laboral. No presenta distracciones significativas."
+              subdimension = "Acciones Inseguras",
+              estado = "Excelente",
+              estado_bg = "#d4edda",
+              estado_color = "#155724",
+              recomendacion = "Desempeño sobresaliente. El participante puede servir como mentor para otros trabajadores.",
+              acciones = list(
+                "Participar como instructor en charlas de seguridad",
+                "Documentar casos de buenas prácticas",
+                "Mantener vigilancia activa en el área"
+              )
             ),
             list(
-              nombre = "Exceso de Confianza",
-              nivel = 4,
-              face_icon = get_face_icon(4)$icon,
-              face_color = get_face_icon(4)$color,
-              descripcion = "Mantiene nivel apropiado de precaución. No subestima riesgos potenciales."
+              subdimension = "Condiciones Inseguras",
+              estado = "Bueno",
+              estado_bg = "#d4edda",
+              estado_color = "#155724",
+              recomendacion = "Buen nivel de identificación de riesgos. Se recomienda profundizar en análisis de riesgos emergentes.",
+              acciones = list(
+                "Participar en taller de análisis de riesgos avanzado",
+                "Realizar reportes semanales de condiciones observadas",
+                "Colaborar en inspecciones de área"
+              )
             ),
             list(
-              nombre = "Impulsividad",
-              nivel = 5,
-              face_icon = get_face_icon(5)$icon,
-              face_color = get_face_icon(5)$color,
-              descripcion = "Toma decisiones de manera reflexiva. Evalúa riesgos antes de actuar."
-            ),
-            list(
-              nombre = "Incumplimiento de Normas",
-              nivel = 4,
-              face_icon = get_face_icon(4)$icon,
-              face_color = get_face_icon(4)$color,
-              descripcion = "Cumple con las normas y procedimientos de seguridad establecidos."
+              subdimension = "Controles Críticos",
+              estado = "Bueno",
+              estado_bg = "#d4edda",
+              estado_color = "#155724",
+              recomendacion = "Sólido conocimiento de controles críticos. Reforzar aplicación en situaciones no rutinarias.",
+              acciones = list(
+                "Revisar procedimientos críticos mensualmente",
+                "Participar en simulacros de emergencia",
+                "Actualizar conocimiento sobre cambios en controles"
+              )
             )
           ),
 
@@ -692,8 +706,8 @@ registro_resultados_server <- function(id, rv, file_loader){
           )
       })
 
-      # Render radar chart for Conductas de Riesgo (scale 1-5)
-      output$informe_chart_conductas <- renderHighchart({
+      # Render radar chart for Identificación de Riesgos (alternate view)
+      output$informe_chart_identificacion_radar <- renderHighchart({
         req(input$informe_click)
 
         clicked_data <- input$informe_click
@@ -703,7 +717,7 @@ registro_resultados_server <- function(id, rv, file_loader){
           hc_chart(polar = TRUE, type = "line") %>%
           hc_title(text = "") %>%
           hc_xAxis(
-            categories = report_data$conductas_chart_data$categories,
+            categories = report_data$identificacion_chart_data$categories,
             tickmarkPlacement = "on",
             lineWidth = 0
           ) %>%
@@ -717,7 +731,7 @@ registro_resultados_server <- function(id, rv, file_loader){
           hc_series(
             list(
               name = "Nivel",
-              data = report_data$conductas_chart_data$values,
+              data = report_data$identificacion_chart_data$values,
               pointPlacement = "on",
               color = "#0079b5"
             )
