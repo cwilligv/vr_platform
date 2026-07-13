@@ -391,7 +391,7 @@ server = function(input, output, session) {
     if (user()$bloqueado) {
       return(NULL)
     } else {
-      if (user()$rol %in% c('admin', 'cliente')) {
+      if (user()$rol %in% c('admin', 'cliente', 'coordinador')) {
         print("Desplegando menu herramientas")
         menuItem(
           text = "Resultados",
