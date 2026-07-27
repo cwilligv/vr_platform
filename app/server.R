@@ -396,7 +396,7 @@ server = function(input, output, session) {
         menuItem(
           text = "Resultados",
           tabName = "tab_herramientas",
-          icon = icon("square-poll-vertical", lib = "font-awesome")
+          icon = icon("square-poll-horizontal", lib = "font-awesome")
         )
       }
     }

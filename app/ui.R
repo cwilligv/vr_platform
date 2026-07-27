@@ -127,7 +127,7 @@ ui <- dashboardPage(
                                menuItem(
                                  text = "Resumen",
                                  tabName = "tab1_inicio",
-                                 icon = icon("chart-simple", lib = "font-awesome"),
+                                 icon = icon("chart-pie", lib = "font-awesome"),
                                  selected = T
                                ),
                                menuItemOutput("menu_inscripciones"), #tab2,
