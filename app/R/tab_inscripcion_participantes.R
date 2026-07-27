@@ -158,7 +158,7 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                                 nombres = input$nombres,
                                 apellidos = input$apellidos,
                                 fecha_nacimiento = as.character(ifelse(!isTruthy(input$fecha_nacimiento), NA, as.character(input$fecha_nacimiento))),
-                                sexo = input$sexo,
+                                sexo = ifelse(!isTruthy(input$sexo), NA, input$sexo),
                                 telefono = input$telefono,
                                 email = trimws(input$email),
                                 centro_de_costo = input$centrocosto,
@@ -296,13 +296,6 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
          }
          return(NULL)  # NULL indicates validation passed
        })
-       iv$add_rule("fecha_nacimiento", sv_required(message = "Debe ingresar fecha de nacimiento."))
-       iv$add_rule("fecha_nacimiento", function(value) {
-         if (isTruthy(value) && ymd(value) >= lubridate::today(tzone = "Chile/Continental")) {
-           "La fecha de nacimiento debe ser anterior a hoy."
-         }
-       })
-       iv$add_rule("sexo", sv_required(message = "Debe seleccionar el sexo."))
        # iv$add_rule("fecha_online", function(value){
        #   if ((length(value) == 0) && (length(input$fecha_presencial) == 0)) {
        #     "Debe ingresar una fecha de inicio de Evaluaciones."
@@ -741,8 +734,6 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                    fluidRow(column(6, textInput(ns("rut"), labelMandatory("Rut"), placeholder = "ej: 12345678-9"))),
                    fluidRow(column(6, textInput(ns("nombres"), labelMandatory("Nombres"), placeholder = "")),
                             column(6, textInput(ns("apellidos"), labelMandatory("Apellidos"), placeholder = ""))),
-                   fluidRow(column(6, dateInput(ns("fecha_nacimiento"), labelMandatory("Fecha de Nacimiento"), language = "es", weekstart = 1, autoclose = T, value = NA, format = "dd-mm-yyyy")),
-                            column(6, selectInput(ns("sexo"), labelMandatory("Sexo"), choices = c("Seleccionar..." = "", "Masculino" = "M", "Femenino" = "F")))),
                    fluidRow(column(6, textInput(ns("telefono"), labelMandatory("Teléfono"), placeholder = "")),
                             column(6, textInput(ns("email"), labelMandatory("Email"), placeholder = ""))),
                    fluidRow(column(6, selectInput(ns("centrocosto"), "Contrato/Proyecto", choices = NULL)),
@@ -1026,8 +1017,6 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
            toggleState("submit", (input$rut != "" | is.null(input$rut)) &&
                          (input$nombres != "" | is.null(input$nombres)) &&
                          (input$apellidos != "" | is.null(input$apellidos)) &&
-                         (isTruthy(input$fecha_nacimiento)) &&
-                         (input$sexo != "" && !is.null(input$sexo)) &&
                          (input$telefono != "" | is.null(input$telefono)) &&
                          (input$email != "" | is.null(input$email)) &&
                          (input$cargo != "" | is.null(input$cargo)) &&

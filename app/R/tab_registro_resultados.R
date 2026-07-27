@@ -156,7 +156,7 @@ registro_resultados_server <- function(id, rv, file_loader){
         if (as.numeric(session$userData$id_empresa) == 0) {
           filtros <- glue::glue_sql("1 = 1", .con = pool)
         } else {
-          filtros <- glue::glue_sql("id_empresa = {as.numeric(session$userData$id_empresa)}", .con = pool)
+          filtros <- glue::glue_sql("a.id_empresa = {as.numeric(session$userData$id_empresa)}", .con = pool)
         }
         
         if(filtro_resultados$competentes_final){
@@ -206,13 +206,25 @@ registro_resultados_server <- function(id, rv, file_loader){
           mutate(nombres = paste0("<strong>", str_to_title(nombres), "</strong>", "<br>", "<i>", str_to_title(apellidos), "</i>"),
                  cargo = paste0("<strong>", str_to_title(cargo), "</strong>", "<br>", "<i>", str_to_title(nombre_fantasia), "</i>"),
                  n = row_number(),
-                 fecha_de_ultima_evaluacion  = format(as.Date(fecha_de_ultima_evaluacion ), format = "%d-%m-%y"),
+                 # Calculate fecha_vencimiento BEFORE formatting fecha_de_ultima_evaluacion
+                 fecha_vencimiento = {
+                   val <- as.numeric(conocimientos_en_seguridad)
+                   fecha_calc <- as.Date(fecha_de_ultima_evaluacion)
+                   if_else(is.na(val), "",
+                           format(
+                             if_else(val >= 90, fecha_calc + months(24),      # Riesgo bajo: 90-100%
+                               if_else(val >= 80, fecha_calc + months(18),    # Riesgo medio bajo: 80-89%
+                                 if_else(val >= 70, fecha_calc + months(12),  # Riesgo medio: 70-79%
+                                   if_else(val >= 60, fecha_calc + months(6), # Riesgo medio alto: 60-69%
+                                           fecha_calc + months(3))))),        # Riesgo Alto: 0-59%
+                             format = "%d-%m-%y"))
+                 },
+                 fecha_de_ultima_evaluacion = format(as.Date(fecha_de_ultima_evaluacion), format = "%d-%m-%y"),
                  # vr = if_else(is.na(vr), as.character(icon("ban", style = "font-size: 24px; color:lightgray;")), as.character(vr)),
-                 fecha_vencimiento = as.character(NA),
                  # informe = as.character(NA),
                  informe = sprintf(
                    '<a href="#" onclick="Shiny.setInputValue(\'%s\', {id: %d, rut: \'%s\'}, {priority: \'event\'}); return false;">
-                      <i class="fa-solid fa-square-poll-horizontal" style="font-size: 18px; color: #0079b5;"></i>
+                      <i class="fa-solid fa-file-lines" style="font-size: 18px; color: #0079b5;"></i>
                     </a>',
                    session$ns("informe_click"),
                    id,  # assuming you have an 'id' column in your data
@@ -228,9 +240,11 @@ registro_resultados_server <- function(id, rv, file_loader){
                  conocimientos_en_seguridad = {
                    val <- as.numeric(conocimientos_en_seguridad)
                    if_else(is.na(val), "",
-                     if_else(val <= 69, as.character(icon("smile", class = "fa-solid", style = "font-size: 24px;color: #77C151;")),
-                       if_else(val <= 79, as.character(icon("meh", class = "fa-solid", style = "font-size: 24px;color: #F1C429;")),
-                         as.character(icon("frown", class = "fa-solid", style = "font-size: 24px;color: #E4465C;")))))
+                     if_else(val >= 90, as.character(icon("smile", class = "fa-solid", style = "font-size: 24px;color: #77C151;")),      # Riesgo bajo: 90-100% - Green
+                       if_else(val >= 80, as.character(icon("smile", class = "fa-solid", style = "font-size: 24px;color: #B8D645;")),    # Riesgo medio bajo: 80-89% - Lime
+                         if_else(val >= 70, as.character(icon("meh", class = "fa-solid", style = "font-size: 24px;color: #F1C429;")),   # Riesgo medio: 70-79% - Yellow
+                           if_else(val >= 60, as.character(icon("meh", class = "fa-solid", style = "font-size: 24px;color: #FF7F3F;")), # Riesgo medio alto: 60-69% - Orange
+                             as.character(icon("frown", class = "fa-solid", style = "font-size: 24px;color: #E4465C;")))))))            # Riesgo Alto: 0-59% - Red
                  }
           ) %>%
           relocate(n) %>%
