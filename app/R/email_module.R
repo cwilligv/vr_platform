@@ -15,11 +15,12 @@ envio_email_participante <- function(cita, dest, nombre_dest, emails_cc, emails_
           
           <body>
               <h3>Estimad@ {nombre_dest} &#128075;,</h3>
-              <p>Junto con saludar, informamos a usted que ha sido inscrito por la empresa <b>{razon_social}</b> a una instancia OnLine de <b>Capacitación</b> &#x1F469;&#x200D;&#x1F3EB;
+              <p>Junto con saludar, informamos a usted que ha sido inscrito por la empresa <b>{razon_social}</b> a una instancia presencial de <b>Evaluación Percepción de Riesgos (Realidad Virtual Inmersiva)</b>.
               
-              <p>Link de conexión &#128073; https://meet.google.com/rtx-kypb-kxu </p>
-              <br>
-              <p>Cabe mencionar que la asistencia es de carácter obligatorio y por lo tanto usted debe de asistir (Conectarse) para dar cumplimiento a lo establecido por su empresa, según se indica a continuación:</p>
+              <ul>
+                  <li>Dirección &#128073; Gral. Borgoño #936 Of 401, Antofagasta - Chile.</li>
+              </ul>
+              <p>Cabe mencionar que la asistencia es de carácter obligatorio y por lo tanto usted debe de asistir (presentarse) para dar cumplimiento a lo establecido por su empresa, según se indica a continuación:</p>
               <ul>
                   <li>&#128198; Fecha: {cita$fecha_preparacion}</li>
                   <li>&#8986; Hora: {cita$horario}</li>
@@ -27,22 +28,22 @@ envio_email_participante <- function(cita, dest, nombre_dest, emails_cc, emails_
               <br>
               <p>(LEER INSTRUCCIONES)</p>
               <ul>
-                  <li>Conectar desde dispositivo personal (&#128187; Computador o &#128241; Celular).</li>
-                  <li>Conexión estable a internet (Obligatorio).</li>
-                  <li>&#128247; Cámara y &#127908; Micrófono (Obligatorio).</li>
-                  <li>&#127911; Audífonos (Obligatorio).</li>
-                  <li>Contar con cuaderno y lápiz, para tomar apuntes &#9997;</li>
-                  <li>Debe estar en un lugar tranquilo, sin ruidos ambientales, ni personas anexas (Obligatorio).</li>
-                  <li>En caso de encontrarse en faena debe informar a su jefatura, para que le den libre en el horario y le dispongan de un lugar adecuado para la capacitación.</li>
+                  <li>Presentarse puntualmente.</li>
+                  <li>Llevar sus &#128083; lentes ópticos en case de utilizar (Obligatorio).</li>
+                  <li>En caso de encontrarse en faena o instalaciones, debe informar a su jefatura para que le den libre en fecha y hora para presentarse.</li>
               </ul>
               <br>
               <p>(CODIGO DE CONDUCTA)</p>
-              <p>Al unirse a la sesión, usted está de acuerdo y acepta dar cumplimiento con lo siguiente:</p>
+              <p>Al participar en la evaluación, usted está de acuerdo y acepta dar cumplimiento con lo siguiente:</p>
               <ul>
-                  <li><u>Relacionarse de manera respetuosa con Coaches y el resto de los participantes.</u></li>
-                  <li><u>No está permitido realizar grabaciones de video y/o audio durante las sesiones. La ley prohíbe filmar, fotografiar o grabar hechos o conversaciones de personas, sin consentimiento (código 161 A del Código Penal chileno que protege la privacidad - entendiendo como parte de ella la intimidad - de las personas)</u></li>
+                  <li>Mantener en todo momento una actitud de respeto hacia los instructores y el resto de los participantes.</li>
+                  <li>Seguir las instrucciones entregadas por el instructor responsable de la evaluación.</li>
+                  <li>No interferir o brindar ayuda a otros participantes durante el proceso de evaluación.</li>
+                  <li>No utilizar teléfonos celulares u otros dispositivos electrónicos durante la evaluación, salvo autorización expresa del instructor.</li>
+                  <li>No está permitido grabar, fotografiar o registrar mediante video o audio las instalaciones, la evaluación, los equipos, el software o a las personas presentes.</li>
+                  <li>Hacer un uso responsable y cuidadoso de los dispositivos de Realidad Virtual e instalaciones. (Cualquier daño ocasionado a equipos, dispositivos, mobiliario de las instalaciones, será informado a su empleador).</li>
               </ul>
-              <p style="color:red;"><b>Le notificamos que en caso de usted no respetar el código de conducta, la consultora recurrirá a realizar las denuncias correspondientes a su empresa y/o legales en caso de ser necesario &#128680;.</b></p>
+              <p style="color:red;"><b>El incumplimiento de este Código de Conducta podrá implicar la suspensión o término inmediato de la evaluación, dejando constancia del hecho e informando a la empresa contratante. En caso de corresponder, MERC Consultora podrá ejercer las acciones administrativas o legales que resulten procedentes.</b></p>
               <br>
               <p>(CONSULTAS)</p>
               <p>En caso de dudas y/o consultas, favor comunicarse con:</p>
@@ -53,10 +54,10 @@ envio_email_participante <- function(cita, dest, nombre_dest, emails_cc, emails_
               <p style="margin:0">Correo: {email_solicitante}</p>
               <br>
               <p>Saludos cordiales / Best regards</p>
-              <h4>Equipo MERC Training<br>
-              MERC Consultora SpA</h4><br>
-              <img src="https://www.mercconsultora.cl/img/logo6.png" width=180>
-              <p style="color:#0086D8;"><b>“Aliados estratégicos en Consultoría de Gestión y Servicios Profesionales de Recursos Humanos.”</b></p>
+              <h4>Equipo MERC VRisk<br>
+              MERC Consultora Limitada</h4><br>
+              <img src="https://mercconsultora.cl/images/MERC_LOGO-p-500.png" width=180>
+              <p style="color:#0086D8;"><b>“¡Impulsamos el Potencial de las Organizaciones Mineras e Industriales!”</b></p>
           </body>
           
           </html>')
@@ -76,7 +77,7 @@ envio_email_participante <- function(cita, dest, nombre_dest, emails_cc, emails_
                              msg = list(body),
                              engine = "curl",
                              engineopts = list(username = env$EMAIL_USERNAME, password = env$EMAIL_PWD),
-                             control=list(smtpServer= env$EMAIL_SMTP))
+                             control=list(smtpServer= env$EMAIL_SMTP, "X-Mailer" = "MERC Consultora", "Reply-To" = env$EMAIL_USERNAME))
   }
   
   save_email(
