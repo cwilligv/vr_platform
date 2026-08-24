@@ -10,7 +10,9 @@ config_sistema_ui <- function(id){
     hr(),
     uiOutput(NS(id, "inactivity_months_ui")),
     hr(),
-    uiOutput(NS(id, "number_of_vr_ui"))
+    uiOutput(NS(id, "number_of_vr_ui")),
+    hr(),
+    uiOutput(NS(id, "horario_config_ui"))
   )
 }
 
@@ -155,6 +157,122 @@ config_sistema_server <- function(id){
             "Error: El número de equipos VR debe estar entre 1 y 10"
           })
         }
+      })
+
+      # Horario configuration
+      output$horario_config_ui <- renderUI({
+        ns <- session$ns
+
+        # Get current values or defaults
+        horario_inicio <- get_system_variable('sistema', NULL, 'horario_inicio')
+        horario_fin <- get_system_variable('sistema', NULL, 'horario_fin')
+        intervalo_slots <- get_system_variable('sistema', NULL, 'intervalo_slots')
+
+        if (is.null(horario_inicio) || length(horario_inicio) == 0) {
+          horario_inicio <- 9
+        }
+        if (is.null(horario_fin) || length(horario_fin) == 0) {
+          horario_fin <- 19
+        }
+        if (is.null(intervalo_slots) || length(intervalo_slots) == 0) {
+          intervalo_slots <- 30
+        }
+
+        # Create hour choices (8 AM to 10 PM)
+        hour_choices <- setNames(8:22, paste0(8:22, ":00"))
+
+        # Create interval choices
+        interval_choices <- c(
+          "15 minutos" = 15,
+          "30 minutos" = 30,
+          "60 minutos (1 hora)" = 60
+        )
+
+        tagList(
+          h5("Configuración de Horarios Disponibles"),
+          p("Configure el rango de horarios disponibles para agendar evaluaciones."),
+          div(
+            style = "display: flex; align-items: flex-end; gap: 10px;",
+            div(
+              style = "width: 200px; margin-bottom: 0;",
+              selectInput(
+                inputId = ns("horario_inicio"),
+                label = "Hora de inicio:",
+                choices = hour_choices,
+                selected = as.numeric(horario_inicio),
+                width = "100%"
+              )
+            ),
+            div(
+              style = "width: 200px; margin-bottom: 0;",
+              selectInput(
+                inputId = ns("horario_fin"),
+                label = "Hora de fin:",
+                choices = hour_choices,
+                selected = as.numeric(horario_fin),
+                width = "100%"
+              )
+            ),
+            div(
+              style = "width: 200px; margin-bottom: 0;",
+              selectInput(
+                inputId = ns("intervalo_slots"),
+                label = "Intervalo entre slots:",
+                choices = interval_choices,
+                selected = as.numeric(intervalo_slots),
+                width = "100%"
+              )
+            ),
+            div(
+              style = "padding-bottom: 12px;",
+              actionButton(
+                inputId = ns("save_horario"),
+                label = "Guardar",
+                class = "btn-primary"
+              )
+            )
+          ),
+          textOutput(ns("horario_status"))
+        )
+      })
+
+      observeEvent(input$save_horario, {
+        req(input$horario_inicio, input$horario_fin, input$intervalo_slots)
+
+        inicio <- as.numeric(input$horario_inicio)
+        fin <- as.numeric(input$horario_fin)
+        intervalo <- as.numeric(input$intervalo_slots)
+
+        if (inicio >= fin) {
+          output$horario_status <- renderText({
+            "Error: La hora de inicio debe ser menor que la hora de fin."
+          })
+          return()
+        }
+
+        if (inicio < 8 || fin > 22) {
+          output$horario_status <- renderText({
+            "Error: El horario debe estar entre 8:00 y 22:00"
+          })
+          return()
+        }
+
+        if (!intervalo %in% c(15, 30, 60)) {
+          output$horario_status <- renderText({
+            "Error: El intervalo debe ser 15, 30 o 60 minutos"
+          })
+          return()
+        }
+
+        set_system_variable('sistema', NULL, 'horario_inicio', inicio)
+        set_system_variable('sistema', NULL, 'horario_fin', fin)
+        set_system_variable('sistema', NULL, 'intervalo_slots', intervalo)
+
+        showNotification("Configuración de horarios guardada.", type = "message")
+
+        output$horario_status <- renderText({
+          paste0("Configuración guardada: Horarios disponibles de ", inicio, ":00 a ", fin, ":00 con intervalos de ", intervalo, " minutos")
+        })
       })
 
     }

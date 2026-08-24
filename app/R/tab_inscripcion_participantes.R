@@ -5,6 +5,15 @@ inscripcion_participantes_ui <- function(id) {
   
   tabItem(
     tabName = "tab2_inscripciones",
+    # Color de fondo de la fila seleccionada en la tabla de participantes
+    tags$style(HTML(glue::glue(
+      "#{NS(id, 'responses_table')} {{ --dt-row-selected: 0, 191, 255; }}
+       #{NS(id, 'responses_table')} table.dataTable tbody tr.selected > *,
+       #{NS(id, 'responses_table')} table.dataTable tbody tr > .selected {{
+         background-color: #00BFFF !important;
+         box-shadow: inset 0 0 0 9999px #00BFFF !important;
+       }}"
+    ))),
     h1("Inscripción de Participantes", style = "font-size: 1.8rem;"),
     bs4Dash::box(
       width = 12,
@@ -73,13 +82,44 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
       # )
       
       dataChangedTrigger <- reactiveVal(0)
-      
+
+      # Cache system variables for performance (avoid repeated DB queries)
+      horario_config <- reactiveValues(
+        inicio = NULL,
+        fin = NULL,
+        intervalo = NULL,
+        numero_vr = NULL
+      )
+
+      # Load system variables once at initialization
+      observe({
+        horario_config$inicio <- get_system_variable('sistema', NULL, 'horario_inicio')
+        horario_config$fin <- get_system_variable('sistema', NULL, 'horario_fin')
+        horario_config$intervalo <- get_system_variable('sistema', NULL, 'intervalo_slots')
+        horario_config$numero_vr <- get_system_variable('sistema', NULL, 'numero_de_vr')
+
+        # Set defaults if not configured
+        if (is.null(horario_config$inicio) || length(horario_config$inicio) == 0) {
+          horario_config$inicio <- 9
+        }
+        if (is.null(horario_config$fin) || length(horario_config$fin) == 0) {
+          horario_config$fin <- 19
+        }
+        if (is.null(horario_config$intervalo) || length(horario_config$intervalo) == 0) {
+          horario_config$intervalo <- 30
+        }
+        if (is.null(horario_config$numero_vr) || length(horario_config$numero_vr) == 0) {
+          horario_config$numero_vr <- 1
+        }
+      }) %>% bindEvent(dataChangedTrigger(), ignoreNULL = FALSE)
+
       output$inscribir_editar_buttons <- renderUI({
         ns <- session$ns
         if (session$userData$rol %in% c('coach')) {
-          # tagList(
-          #   actionButton(NS(id, "edit_button"), "Editar", class = "btn-success", icon("edit"))
-          # )
+          tagList(
+            actionButton(NS(id, "edit_button"), "Editar", class = "btn-success", icon("edit")),
+            actionButton(ns("mon_email_resend"), "Correo", class = "btn-success", icon = shiny::icon("paper-plane"))
+          )
         } else {
           if (!(session$userData$rol %in% c('asistente'))) {
             tagList(
@@ -90,7 +130,8 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
             if (session$userData$rol %in% c('asistente')) {
               tagList(
                 # actionButton(NS(id, "add_button"), "Inscribir", icon = shiny::icon("plus")),
-                actionButton(NS(id, "edit_button"), "Editar", class = "btn-success", icon("edit"))
+                actionButton(NS(id, "edit_button"), "Editar", class = "btn-success", icon("edit")),
+                actionButton(ns("mon_email_resend"), "Correo", class = "btn-success", icon = shiny::icon("paper-plane"))
               )
             }
           }
@@ -102,7 +143,8 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
         if (session$userData$rol %in% c('admin')) {
           tagList(
             # actionButton(ns("edit_button"), "Editar", class = "btn-success", icon("edit")),
-            actionButton(ns("delete_button"), "Borrar", class = "btn-success", icon("trash-alt"))
+            actionButton(ns("delete_button"), "Borrar", class = "btn-success", icon("trash-alt")),
+            actionButton(ns("mon_email_resend"), "Correo", class = "btn-success", icon = shiny::icon("paper-plane"))
             # actionButton(ns("carga_masiva"), "Carga masiva", class = "btn-success")
             # selectInput("listado_empresas", "Clientes", choices = get_empresas(session$userData$rol, session$userData$email))
           )
@@ -123,6 +165,19 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
         dataChangedTrigger(dataChangedTrigger() + 1)
       })
        # ================= BEGIN: INSCRIPCIONES =======================
+      
+      reenvio_email_params <- reactiveValues(
+        id_empresa = 0,
+        rut = NULL,
+        id_preparacion = NULL,
+        nombres = NULL,
+        apellidos = NULL,
+        fecha_prep = NULL,
+        horario = NULL,
+        email = NULL,
+        solicitante = NULL,
+        email_solicitante = NULL
+      )
        
        #load responses_df and make reactive to inputs
        responses_df <- reactive({
@@ -161,7 +216,7 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                                 sexo = ifelse(!isTruthy(input$sexo), NA, input$sexo),
                                 telefono = input$telefono,
                                 email = trimws(input$email),
-                                centro_de_costo = input$centrocosto,
+                                centro_de_costo = NA,
                                 cargo = input$cargo,
                                 # fecha_solicitud = as.character(today(tzone = "Chile/Continental")),
                                 fecha_solicitud = as.character(now(tzone = "Chile/Continental")),
@@ -235,7 +290,6 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
            activar_fuera_horario <- get_system_variable('inscripciones', NULL, 'activar_fuera_horario')
            if (lubridate::ymd_hms(now(tzone = "Chile/Continental")) %within% disponible | session$userData$rol %in% c('admin','coach') | activar_fuera_horario) {
              entry_form("submit", "Inscribir participante")
-             updateSelectInput(session, "centrocosto", choices = get_centro_de_costos(as.numeric(session$userData$id_empresa)), selected = '')
              output$checkGroup_capacitaciones <- renderUI({
                checkboxGroupInput(ns("checkBoxGroup"), label = "",
                                   choices = c("Psicolaboral" = 1, "Conductual" = 2, "Conocimientos Seguridad" = 3,
@@ -662,48 +716,73 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
        
        observeEvent(input$fecha_solicitud_urgente, {
          req(input$fecha_solicitud_urgente)
-         
+         req(horario_config$inicio, horario_config$fin, horario_config$intervalo)
+
          selected_date <- ymd(input$fecha_solicitud_urgente)
          current_date <- lubridate::today(tzone = "Chile/Continental")
          current_time <- lubridate::now(tzone = "Chile/Continental")
-         
-         # Generate full time vector (all available times)
-         full_time_vector <- format(
-           seq(as.POSIXct("2017-01-01", tz = "UTC"), 
-               as.POSIXct("2017-01-02", tz = "UTC"), 
-               by = "30 min"), 
-           format = "%I:%M %P"
-         )[19:39]
-         
+
+         # Use cached horario configuration (no DB queries)
+         horario_inicio <- horario_config$inicio
+         horario_fin <- horario_config$fin
+         intervalo_slots <- horario_config$intervalo
+
+         # Generate full time vector (all available times) based on configured interval
+         # Use today's actual date for proper time comparison when filtering
+         start_time_base <- lubridate::ymd_hms(
+           paste(as.character(selected_date), sprintf("%02d:00:00", horario_inicio)),
+           tz = "Chile/Continental"
+         )
+         end_time_base <- lubridate::ymd_hms(
+           paste(as.character(selected_date), sprintf("%02d:00:00", horario_fin)),
+           tz = "Chile/Continental"
+         )
+
+         # Generate time slots as datetime objects
+         all_slots_datetime <- seq(start_time_base, end_time_base, by = paste(intervalo_slots, "min"))
+
+         # Filter for same-day bookings: only show future slots
          if (selected_date == current_date) {
-           # Get current time
-           # current_time <- lubridate::ymd_hms("2025-10-09 05:58:00", tz = "Chile/Continental")
            current_time <- lubridate::now(tzone = "Chile/Continental")
-           start_time_8am <- lubridate::ymd_hms(paste(lubridate::today(tzone = "Chile/Continental"), "08:00:00"), tz = "Chile/Continental")
-           end_time_9pm <- lubridate::ymd_hms(paste(lubridate::today(tzone = "Chile/Continental"), "20:59:59"), tz = "Chile/Continental")
-           
-           if (between(current_time, start_time_8am, end_time_9pm)) {
-             current_hour <- as.numeric(format(current_time, "%H"))
-             
-             # Calculate the next hour (starting point)
-             next_hour <- current_hour + 1
-             
-             full_time_vector <- format(seq(as.POSIXct("2017-01-01", tz = "UTC"), as.POSIXct("2017-01-02", tz = "UTC"), by = "hour"), format="%I:%M %P")[9:22]
-             # Calculate which positions correspond to our desired time range
-             # Position 1 in full_time_vector corresponds to 8 AM (hour 8)
-             # So hour 'next_hour' corresponds to position (next_hour - 8 + 1)
-             start_position <- next_hour - 8 + 1
-             end_position <- 14  # Position for 9 PM in the vector (21 - 8 + 1 = 14)
-             time_vector <- full_time_vector[start_position:end_position]
+
+           # Filter slots that are after current time (at least one interval ahead)
+           future_slots <- all_slots_datetime[all_slots_datetime > current_time]
+
+           if (length(future_slots) > 0) {
+             time_vector <- format(future_slots, format = "%I:%M %p")
            } else {
              time_vector <- c("Sin horarios disponibles")
            }
-           
          } else {
            # If selected date is in the future, show all times
-           time_vector <- full_time_vector
+           time_vector <- format(all_slots_datetime, format = "%I:%M %p")
          }
-         
+
+         # Filter out full time slots based on availability
+         if (length(time_vector) > 0 && time_vector[1] != "Sin horarios disponibles") {
+           # Get availability information for the selected date (pass cached config to avoid DB queries)
+           slots_info <- get_available_slots_by_time(
+             as.character(selected_date),
+             horario_inicio = horario_inicio,
+             horario_fin = horario_fin,
+             intervalo_slots = intervalo_slots,
+             numero_vr = horario_config$numero_vr
+           )
+
+           # Filter to only include available slots
+           available_slots <- slots_info %>%
+             filter(!esta_lleno) %>%
+             pull(horario)
+
+           # Intersect with time_vector to maintain the filtered times
+           time_vector <- intersect(time_vector, available_slots)
+
+           # If no slots available, show message
+           if (length(time_vector) == 0) {
+             time_vector <- c("Sin horarios disponibles")
+           }
+         }
+
          # Update the selectInput with the filtered time vector
          updateSelectInput(session, "horario_urgente", choices = time_vector)
        })
@@ -736,8 +815,7 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                             column(6, textInput(ns("apellidos"), labelMandatory("Apellidos"), placeholder = ""))),
                    fluidRow(column(6, textInput(ns("telefono"), labelMandatory("Teléfono"), placeholder = "")),
                             column(6, textInput(ns("email"), labelMandatory("Email"), placeholder = ""))),
-                   fluidRow(column(6, selectInput(ns("centrocosto"), "Contrato/Proyecto", choices = NULL)),
-                            column(6, textInput(ns("cargo"), labelMandatory("Cargo"), placeholder = ""))),
+                   fluidRow(column(6, textInput(ns("cargo"), labelMandatory("Cargo"), placeholder = ""))),
                    # h4("Fechas Evaluación"),
                    # p("Indique la fecha que comenzará a rendir las evaluaciones."),
                    # fluidRow(column(6, dateInput(ns("fecha_online"), "Fecha de Inicio", language = "es", weekstart = 1, autoclose = T, value = NA, datesdisabled = restricted_dates)),
@@ -840,12 +918,23 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
            ))
          } else {
            editing_on(TRUE)
+
+           # Use cached horario configuration for edit form (no DB queries)
+           horario_inicio_edit <- horario_config$inicio
+           horario_fin_edit <- horario_config$fin
+           intervalo_slots_edit <- horario_config$intervalo
+
+           # Generate time slots for edit form based on configured interval
+           start_time_base_edit <- lubridate::ymd_hms(paste("2017-01-01", sprintf("%02d:00:00", horario_inicio_edit)), tz = "UTC")
+           end_time_base_edit <- lubridate::ymd_hms(paste("2017-01-01", sprintf("%02d:00:00", horario_fin_edit)), tz = "UTC")
+
            full_time_vector <- format(
-             seq(as.POSIXct("2017-01-01", tz = "UTC"), 
-                 as.POSIXct("2017-01-02", tz = "UTC"), 
-                 by = "30 min"), 
+             seq(start_time_base_edit,
+                 end_time_base_edit,
+                 by = paste(intervalo_slots_edit, "min")),
              format = "%I:%M %P"
-           )[19:39]
+           )
+
            showModal(modalDialog(
              fluidPage(
                tabsetPanel(
@@ -1023,6 +1112,143 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                          # (length(input$checkBoxGroup) > 0) &&
                          (is_valid_urgent_date()))
          }
+       })
+       
+       observeEvent(input$mon_email_resend, {
+         ns <- session$ns
+         
+         showModal(
+           if(length(input$responses_table_rows_selected) > 1 ){
+             modalDialog(
+               title = "Advertencia",
+               paste("Porfavor seleccione una sola fila." ),easyClose = TRUE)
+           } else if(length(input$responses_table_rows_selected) < 1){
+             modalDialog(
+               title = "Advertencia",
+               paste("Porfavor seleccione una fila." ),
+               footer = tagList(
+                 modalButton("Cerrar")
+               ),
+               easyClose = TRUE)
+           })
+         
+         if (length(input$responses_table_rows_selected) == 1 ) {
+           SQL_df <- responses_df()
+           reenvio_email_params$id_empresa <- SQL_df[input$responses_table_rows_selected, "id_empresa"]
+           reenvio_email_params$rut <- SQL_df[input$responses_table_rows_selected, "rut"]
+           reenvio_email_params$id_preparacion <- SQL_df[input$responses_table_rows_selected, "id_preparacion"]
+           reenvio_email_params$nombres <- SQL_df[input$responses_table_rows_selected, "nombres"]
+           reenvio_email_params$apellidos <- SQL_df[input$responses_table_rows_selected, "apellidos"]
+           reenvio_email_params$fecha_prep <- SQL_df[input$responses_table_rows_selected, "fecha_preparacion"]
+           reenvio_email_params$horario <- SQL_df[input$responses_table_rows_selected, "horario"]
+           reenvio_email_params$email <- SQL_df[input$responses_table_rows_selected, "email"]
+           reenvio_email_params$email_solicitante <- SQL_df[input$responses_table_rows_selected, "solicitante_email"]
+           reenvio_email_params$solicitante <- SQL_df[input$responses_table_rows_selected, "solicitante"]
+           
+           showModal(
+             modalDialog(
+               title = "Correo Notificación de Inscripción",
+               p(paste0("Para: ", SQL_df[input$responses_table_rows_selected, "nombres"], SQL_df[input$responses_table_rows_selected, "apellidos"])),
+               p(paste0("Rut: ", SQL_df[input$responses_table_rows_selected, "rut"])),
+               p(paste0("Fecha capacitación: ", SQL_df[input$responses_table_rows_selected, "fecha_preparacion"])),
+               p(paste0("Horario capacitación: ", SQL_df[input$responses_table_rows_selected, "horario"])),
+               # br(),
+               # p("Nota: Se notificará automáticamente la suspención al participante y coach asignado."),
+               # textAreaInput(ns("mon_razones"), "Justificación (Obligatoria)"),
+               layout_columns(
+                 actionButton(ns("email_resend_btn"), "Reenviar"),
+                 actionButton(ns("email_reschedule_btn"), "Reagendar")
+               ),
+               # textInput(ns("email_subject"), "Asunto:", value = "Capacitación (Reagendamiento)"),
+               easyClose = F,
+               footer = tagList(
+                 modalButton("Cancelar")
+                 # actionButton(ns("email_resend_btn"), "Enviar")
+               ) 
+             )
+           )
+         }
+         
+       })
+       
+       observeEvent(input$email_resend_btn, {
+         # reenviar con funcion existente
+         withProgress(
+           message = "Iniciando reenvio de email...",
+           detail = "Esto podria tomar un momento...",
+           value = 0, {
+             setProgress(0.2, message = "Recolectando datos...")
+             shinyjs::disable("email_resend_btn")
+             shinyjs::disable("email_reschedule_btn")
+             cita <- list(fecha_preparacion = reenvio_email_params$fecha_prep, horario = reenvio_email_params$horario)
+             empresa <- get_empresas('cliente', reenvio_email_params$email_solicitante)
+             info_solicitante <- get_solicitante_info(reenvio_email_params$email_solicitante)
+             setProgress(0.5, message = "Reenviando email...")
+             
+             envio_email_participante(
+               cita, 
+               reenvio_email_params$email,
+               reenvio_email_params$nombres, 
+               reenvio_email_params$email_solicitante,
+               c("capacitacion@mercconsultora.cl"),
+               rownames(as.data.frame(empresa)),
+               reenvio_email_params$solicitante,
+               info_solicitante$cargo,
+               info_solicitante$telefono,
+               reenvio_email_params$email_solicitante,
+               reenvio_email_params$rut,
+               reenvio_email_params$id_preparacion,
+               'reenvio',
+               'EVALUACIÓN (Recordatorio)'
+             )
+             setProgress(0.7, message = "Reenviando email...")
+             Sys.sleep(1)
+             setProgress(1, message = "Correo reenviado")
+           }
+         )
+         shinyjs::enable("email_resend_btn")
+         shinyjs::enable("email_reschedule_btn")
+         removeModal()
+       })
+       
+       observeEvent(input$email_reschedule_btn, {
+         # reenviar con funcion existente
+         withProgress(
+           message = "Iniciando reenvio de email...",
+           detail = "Esto podria tomar un momento...",
+           value = 0, {
+             setProgress(0.2, message = "Recolectando datos...")
+             shinyjs::disable("email_resend_btn")
+             shinyjs::disable("email_reschedule_btn")
+             cita <- list(fecha_preparacion = reenvio_email_params$fecha_prep, horario = reenvio_email_params$horario)
+             empresa <- get_empresas('cliente', reenvio_email_params$email_solicitante)
+             info_solicitante <- get_solicitante_info(reenvio_email_params$email_solicitante)
+             setProgress(0.5, message = "Reenviando email...")
+             
+             envio_email_participante(
+               cita, 
+               reenvio_email_params$email,
+               reenvio_email_params$nombres, 
+               reenvio_email_params$email_solicitante,
+               c("capacitacion@mercconsultora.cl"),
+               rownames(as.data.frame(empresa)),
+               reenvio_email_params$solicitante,
+               info_solicitante$cargo,
+               info_solicitante$telefono,
+               reenvio_email_params$email_solicitante,
+               reenvio_email_params$rut,
+               reenvio_email_params$id_preparacion,
+               'reenvio',
+               'EVALUACIÓN (Reagendamiento)'
+             )
+             setProgress(0.7, message = "Reenviando email de agendamiento...")
+             Sys.sleep(1)
+             setProgress(1, message = "Correo reenviado")
+           }
+         )
+         shinyjs::enable("email_resend_btn")
+         shinyjs::enable("email_reschedule_btn")
+         removeModal()
        })
        
        # ================= END: INSCRIPCIONES =======================
