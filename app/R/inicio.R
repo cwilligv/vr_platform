@@ -3,9 +3,14 @@ inicio_ui <- function(id) {
   # Calculate years for choices
   current_year <- lubridate::year(lubridate::today(tzone = "Chile/Continental"))
   years <- current_year:(current_year - 4)
-  
+
   tabItem(
     tabName = "tab1_inicio",
+    # Colores personalizados de los info boxes (bs4InfoBox solo acepta status con nombre)
+    tags$style(HTML(glue::glue(
+      "#{NS(id, 'infobox_capacitaciones_terminadas')} .info-box {{ background-color: #00BFFF !important; }}
+       #{NS(id, 'infobox_agendamientos')} .info-box {{ background-color: #D100FF !important; }}"
+    ))),
     h1("Resumen", style = "font-size: 1.8rem;"),
     bs4Dash::box(
       width = 12,
@@ -106,12 +111,12 @@ inicio_server <- function(id, rv){
             mutate(Meses = as.Date(paste0(Meses, "-01"))) %>% 
             group_by(Meses, estado) %>% summarise(value = n())
          
-          year_months %>% left_join(res, by = "Meses") %>% 
+          year_months %>% left_join(res, by = "Meses") %>%
             mutate(value = if_else(is.na(value), 0, value),
-                   estado = if_else(is.na(estado), 'no data', 
+                   estado = if_else(is.na(estado), 'no data',
                                     if_else(estado == 'capacitado', 'Capacitaciones',
                                             ifelse(estado == 'inasistencia', 'Inasistencias', estado))),
-                   colores = if_else(estado == 'Capacitaciones', '#006ac2',
+                   colores = if_else(estado == 'Capacitaciones', '#00BFFF',
                                      if_else(estado == 'Inasistencias', '#becede', 'white')),
                    meses_string = paste0(meses_es[month(ymd(Meses))], "-",year(Meses)))
         }else{

@@ -26,7 +26,7 @@ registro_resultados_ui <- function(id){
         div(
           style = "display: flex; flex-wrap: nowrap; gap: 2px;",
           actionButton(NS(id, "filtro_competentes_final"), label = "TODOS", style = "flex: 1; min-width: 0; color: #fff;
-  background-color: #006ac2; height: 30px; padding: 2px 4px; font-size: 11px;", size = "xs"),
+  background-color: #00BFFF; height: 30px; padding: 2px 4px; font-size: 11px;", size = "xs"),
           actionButton(NS(id, "filtro_brechas"), label = "RIESGO BAJO", style = "flex: 1; min-width: 0; background-color:
   #f8f9fa; height: 30px; padding: 2px 4px; font-size: 11px;", size = "xs"),
           actionButton(NS(id, "filtro_todos"), label = "RIESGO MEDIO", style = "flex: 1; min-width: 0; background-color:
@@ -107,7 +107,7 @@ registro_resultados_server <- function(id, rv, file_loader){
         filtro_resultados$competentes_final <- TRUE
         filtro_resultados$brechas <- FALSE
         filtro_resultados$todos <- FALSE
-        runjs(paste0('document.getElementById("',ns("filtro_competentes_final"),'").style.background = "#006ac2";'))
+        runjs(paste0('document.getElementById("',ns("filtro_competentes_final"),'").style.background = "#00BFFF";'))
         runjs(paste0('document.getElementById("',ns("filtro_competentes_final"),'").style.color = "#fff";'))
         runjs(paste0('document.getElementById("',ns("filtro_brechas"),'").style.background = "#f8f9fa";'))
         runjs(paste0('document.getElementById("',ns("filtro_brechas"),'").style.color = "#444";'))
@@ -122,7 +122,7 @@ registro_resultados_server <- function(id, rv, file_loader){
         filtro_resultados$todos <- FALSE
         runjs(paste0('document.getElementById("',ns("filtro_competentes_final"),'").style.background = "#f8f9fa";'))
         runjs(paste0('document.getElementById("',ns("filtro_competentes_final"),'").style.color = "#444";'))
-        runjs(paste0('document.getElementById("',ns("filtro_brechas"),'").style.background = "#006ac2";'))
+        runjs(paste0('document.getElementById("',ns("filtro_brechas"),'").style.background = "#00BFFF";'))
         runjs(paste0('document.getElementById("',ns("filtro_brechas"),'").style.color = "#fff";'))
         runjs(paste0('document.getElementById("',ns("filtro_todos"),'").style.background = "#f8f9fa";'))
         runjs(paste0('document.getElementById("',ns("filtro_todos"),'").style.color = "#444";'))
@@ -137,7 +137,7 @@ registro_resultados_server <- function(id, rv, file_loader){
         runjs(paste0('document.getElementById("',ns("filtro_competentes_final"),'").style.color = "#444";'))
         runjs(paste0('document.getElementById("',ns("filtro_brechas"),'").style.background = "#f8f9fa";'))
         runjs(paste0('document.getElementById("',ns("filtro_brechas"),'").style.color = "#444";'))
-        runjs(paste0('document.getElementById("',ns("filtro_todos"),'").style.background = "#006ac2";'))
+        runjs(paste0('document.getElementById("',ns("filtro_todos"),'").style.background = "#00BFFF";'))
         runjs(paste0('document.getElementById("',ns("filtro_todos"),'").style.color = "#fff";'))
       })
       # ================= BEGIN: MONITOR =======================
@@ -224,7 +224,7 @@ registro_resultados_server <- function(id, rv, file_loader){
                  # informe = as.character(NA),
                  informe = sprintf(
                    '<a href="#" onclick="Shiny.setInputValue(\'%s\', {id: %d, rut: \'%s\'}, {priority: \'event\'}); return false;">
-                      <i class="fa-solid fa-file-lines" style="font-size: 18px; color: #0079b5;"></i>
+                      <i class="fa-solid fa-file-lines" style="font-size: 18px; color: #D100FF;"></i>
                     </a>',
                    session$ns("informe_click"),
                    id,  # assuming you have an 'id' column in your data

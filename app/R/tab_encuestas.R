@@ -1,6 +1,15 @@
 resultados_encuesta_ui <- function(id){
   tabItem(
     tabName = "tab_encuestas",
+    # Color de fondo de la fila seleccionada en la tabla de encuestas
+    tags$style(HTML(glue::glue(
+      "#{NS(id, 'encuesta_table')} {{ --dt-row-selected: 0, 191, 255; }}
+       #{NS(id, 'encuesta_table')} table.dataTable tbody tr.selected > *,
+       #{NS(id, 'encuesta_table')} table.dataTable tbody tr > .selected {{
+         background-color: #00BFFF !important;
+         box-shadow: inset 0 0 0 9999px #00BFFF !important;
+       }}"
+    ))),
     h1("Nivel de Satisfacción", style = "font-size: 1.8rem;"),
     bs4Dash::box(
       width = 12,
@@ -191,7 +200,7 @@ resultados_encuesta_server <- function(id, rv){
             #   TRUE            ~ paste(replicate(1, as.character(tags$span(icon("heart"), style = "color: #006ac2;"))), collapse = "") # For any other case (0-20)
             # ),
             score = paste0(as.character(round(score)), "%"),
-            detalles = glue('<a id="custom_btn" onclick="Shiny.setInputValue(\'',ns('boton_detalles'),'\', \'{X}\', {{priority: \'event\'}})"><span class="glyphicon glyphicon-check" style = "font-size: 24px;color: #FF6600;"></span></a>')
+            detalles = glue('<a id="custom_btn" onclick="Shiny.setInputValue(\'',ns('boton_detalles'),'\', \'{X}\', {{priority: \'event\'}})"><span class="glyphicon glyphicon-check" style = "font-size: 24px;color: #D100FF;"></span></a>')
           ) %>%
           # relocate(score, .before = detalles) %>%
           select(-apellidos, -horario, -nombre_empresa)

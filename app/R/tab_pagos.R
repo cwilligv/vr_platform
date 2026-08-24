@@ -3,6 +3,21 @@ pagos_ui <- function(id) {
   
   tabItem(
     tabName = "tab9_pagos",
+    # Color de fondo de la fila seleccionada y de los botones EP al ser seleccionados
+    tags$style(HTML(glue::glue(
+      "#{NS(id, 'prefacturas_table')} {{ --dt-row-selected: 0, 191, 255; }}
+       #{NS(id, 'prefacturas_table')} table.dataTable tbody tr.selected > *,
+       #{NS(id, 'prefacturas_table')} table.dataTable tbody tr > .selected {{
+         background-color: #00BFFF !important;
+         box-shadow: inset 0 0 0 9999px #00BFFF !important;
+       }}
+       #{NS(id, 'generar_prefactura')}:focus, #{NS(id, 'generar_prefactura')}:active, #{NS(id, 'generar_prefactura')}.active,
+       #{NS(id, 'editar_prefactura')}:focus, #{NS(id, 'editar_prefactura')}:active, #{NS(id, 'editar_prefactura')}.active {{
+         background-color: #00BFFF !important;
+         border-color: #00BFFF !important;
+         box-shadow: 0 0 0 0.2rem rgba(0, 191, 255, 0.5) !important;
+       }}"
+    ))),
     h1("Estados de Pago", style = "font-size: 1.8rem;"),
     shinyalert::useShinyalert(),
     bs4Dash::box(
@@ -128,7 +143,7 @@ pagos_server <- function(id, rv){
           select(fecha_servicio, nombre_fantasia, cantidad, total, estado) %>%
           mutate(index = row_number(),
                  total = if_else(is.na(total), NA, paste0("$", formatC(as.numeric(total), format="f", digits=0, decimal.mark = ",", big.mark = "."))),
-                 detalles = glue('<a id="custom_btn" onclick="Shiny.setInputValue(\'',ns('boton_detalles'),'\', \'{index}\', {{priority: \'event\'}})"><span class="glyphicon glyphicon-list-alt" style = "font-size: 24px;color: black;"></span></a>')) %>%
+                 detalles = glue('<a id="custom_btn" onclick="Shiny.setInputValue(\'',ns('boton_detalles'),'\', \'{index}\', {{priority: \'event\'}})"><span class="glyphicon glyphicon-list-alt" style = "font-size: 24px;color: #D100FF;"></span></a>')) %>%
           relocate(index)
         
         names(table) <- c("n", "Fecha Servicio", "Empresa", "Cantidad", "Total", "Estado", "Detalles")

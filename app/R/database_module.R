@@ -793,3 +793,93 @@ get_certificado_folio <- function(id_preparacion) {
     select(folio) %>%
     collect()
 }
+
+#' Get available slots for each time block on a given date
+#' @param pfecha The date to check (format: "YYYY-MM-DD")
+#' @param horario_inicio Hour to start (optional, will query DB if NULL)
+#' @param horario_fin Hour to end (optional, will query DB if NULL)
+#' @param intervalo_slots Interval in minutes (optional, will query DB if NULL)
+#' @param numero_vr Number of VR headsets (optional, will query DB if NULL)
+#' @return Data frame with horario and available slots (numero_vr - bookings)
+get_available_slots_by_time <- function(pfecha, horario_inicio = NULL, horario_fin = NULL, intervalo_slots = NULL, numero_vr = NULL) {
+  # Get configuration from DB only if not provided (for backwards compatibility)
+  if (is.null(numero_vr)) {
+    numero_vr <- get_system_variable('sistema', NULL, 'numero_de_vr')
+    if (is.null(numero_vr) || length(numero_vr) == 0) {
+      numero_vr <- 1
+    }
+  }
+
+  if (is.null(horario_inicio)) {
+    horario_inicio <- get_system_variable('sistema', NULL, 'horario_inicio')
+    if (is.null(horario_inicio) || length(horario_inicio) == 0) {
+      horario_inicio <- 9
+    }
+  }
+
+  if (is.null(horario_fin)) {
+    horario_fin <- get_system_variable('sistema', NULL, 'horario_fin')
+    if (is.null(horario_fin) || length(horario_fin) == 0) {
+      horario_fin <- 19
+    }
+  }
+
+  if (is.null(intervalo_slots)) {
+    intervalo_slots <- get_system_variable('sistema', NULL, 'intervalo_slots')
+    if (is.null(intervalo_slots) || length(intervalo_slots) == 0) {
+      intervalo_slots <- 30
+    }
+  }
+
+  # Get bookings for the specified date (uses index on fecha_preparacion)
+  bookings <- tbl(pool, "monitor_preparaciones") %>%
+    filter(fecha_preparacion == pfecha) %>%
+    group_by(horario) %>%
+    summarise(reservas = n()) %>%
+    collect()
+
+  # Generate all possible time slots based on configured interval
+  start_time_base <- lubridate::ymd_hms(paste("2017-01-01", sprintf("%02d:00:00", horario_inicio)), tz = "UTC")
+  end_time_base <- lubridate::ymd_hms(paste("2017-01-01", sprintf("%02d:00:00", horario_fin)), tz = "UTC")
+
+  all_horarios <- format(
+    seq(start_time_base,
+        end_time_base,
+        by = paste(intervalo_slots, "min")),
+    format = "%I:%M %p"
+  )
+
+  # Create a data frame with all horarios
+  result <- data.frame(
+    horario = all_horarios,
+    stringsAsFactors = FALSE
+  )
+
+  # Join with bookings and calculate available slots
+  result <- result %>%
+    left_join(bookings, by = "horario") %>%
+    mutate(
+      reservas = ifelse(is.na(reservas), 0, reservas),
+      slots_disponibles = numero_vr - reservas,
+      esta_lleno = slots_disponibles <= 0
+    )
+
+  return(result)
+}
+
+#' Check if a specific time slot is available on a given date
+#' @param pfecha The date to check (format: "YYYY-MM-DD")
+#' @param phorario The time slot to check (format: "HH:MM am/pm")
+#' @return TRUE if slot is available, FALSE if full
+is_slot_available <- function(pfecha, phorario) {
+  slots_info <- get_available_slots_by_time(pfecha)
+
+  slot <- slots_info %>%
+    filter(horario == phorario)
+
+  if (nrow(slot) == 0) {
+    return(FALSE)  # Invalid time slot
+  }
+
+  return(slot$slots_disponibles > 0)
+}
