@@ -114,9 +114,9 @@ inicio_server <- function(id, rv){
           year_months %>% left_join(res, by = "Meses") %>%
             mutate(value = if_else(is.na(value), 0, value),
                    estado = if_else(is.na(estado), 'no data',
-                                    if_else(estado == 'capacitado', 'Capacitaciones',
+                                    if_else(estado == 'capacitado', 'Evaluado',
                                             ifelse(estado == 'inasistencia', 'Inasistencias', estado))),
-                   colores = if_else(estado == 'Capacitaciones', '#00BFFF',
+                   colores = if_else(estado == 'Evaluado', '#00BFFF',
                                      if_else(estado == 'Inasistencias', '#becede', 'white')),
                    meses_string = paste0(meses_es[month(ymd(Meses))], "-",year(Meses)))
         }else{
