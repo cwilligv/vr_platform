@@ -38,7 +38,7 @@ monitor_avances_ui <- function(id){
         width = 8,
         align = "center",
         style = "z-index: 10",
-        radioButtons(NS(id, "monitor_avances_metric_selector"), "", choices = c("N°Capacitados"="Capacitados", "N°Bloques  "="Bloques"), selected = "Capacitados", inline = TRUE),
+        radioButtons(NS(id, "monitor_avances_metric_selector"), "", choices = c("N°Evaluados"="Evaluados", "N°Bloques  "="Bloques"), selected = "Evaluados", inline = TRUE),
         div(highchartOutput(NS(id, "monitor_avances_chart")) %>% shinycssloaders::withSpinner(type = 8, proxy.height = "300px"))
       )
     )
@@ -60,7 +60,7 @@ monitor_avances_server <- function(id, rv){
       output$selector <- renderUI({
         ns <- session$ns
         tagList(
-          div(selectInput(ns("listado_psicologos"), "Psicologo", choices = get_psicologos(), selected = "Todos"), style = "margin-top:-20px")
+          div(selectInput(ns("listado_psicologos"), "Monitor", choices = get_psicologos(), selected = "Todos"), style = "margin-top:-20px")
         )
       })
       
@@ -144,7 +144,7 @@ monitor_avances_server <- function(id, rv){
           )
         
         table <- datatable(table,
-                           colnames = c("Nombre Coach", "Fecha", "N°Capacitados", "N° Bloques"),
+                           colnames = c("Nombre Monitor", "Fecha", "N°Evaluados", "N° Bloques"),
                            #filter = "top",
                            rownames = FALSE,
                            escape = FALSE,
@@ -167,7 +167,7 @@ monitor_avances_server <- function(id, rv){
           datos <- resultados_df() %>% 
             group_by(fecha) %>% 
             summarise(
-              Capacitados = sum(Capacitados),
+              Evaluados = sum(Capacitados),
               Bloques = sum(Bloques)
             ) %>% 
             mutate(nombres_coach = 'Todos')
