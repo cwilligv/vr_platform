@@ -212,11 +212,9 @@ registro_resultados_server <- function(id, rv, file_loader){
                    fecha_calc <- as.Date(fecha_de_ultima_evaluacion)
                    if_else(is.na(val), "",
                            format(
-                             if_else(val >= 90, fecha_calc + months(24),      # Riesgo bajo: 90-100%
-                               if_else(val >= 80, fecha_calc + months(18),    # Riesgo medio bajo: 80-89%
-                                 if_else(val >= 70, fecha_calc + months(12),  # Riesgo medio: 70-79%
-                                   if_else(val >= 60, fecha_calc + months(6), # Riesgo medio alto: 60-69%
-                                           fecha_calc + months(3))))),        # Riesgo Alto: 0-59%
+                             if_else(val >= 80, fecha_calc + months(6),       # Riesgo bajo: 80-100%
+                               if_else(val >= 70, fecha_calc + months(12),    # Riesgo medio: 70-79%
+                                       fecha_calc + months(24))),            # Riesgo alto: 0-69%
                              format = "%d-%m-%y"))
                  },
                  fecha_de_ultima_evaluacion = format(as.Date(fecha_de_ultima_evaluacion), format = "%d-%m-%y"),
@@ -240,11 +238,9 @@ registro_resultados_server <- function(id, rv, file_loader){
                  conocimientos_en_seguridad = {
                    val <- as.numeric(conocimientos_en_seguridad)
                    if_else(is.na(val), "",
-                     if_else(val >= 90, as.character(icon("smile", class = "fa-solid", style = "font-size: 24px;color: #77C151;")),      # Riesgo bajo: 90-100% - Green
-                       if_else(val >= 80, as.character(icon("smile", class = "fa-solid", style = "font-size: 24px;color: #B8D645;")),    # Riesgo medio bajo: 80-89% - Lime
-                         if_else(val >= 70, as.character(icon("meh", class = "fa-solid", style = "font-size: 24px;color: #F1C429;")),   # Riesgo medio: 70-79% - Yellow
-                           if_else(val >= 60, as.character(icon("meh", class = "fa-solid", style = "font-size: 24px;color: #FF7F3F;")), # Riesgo medio alto: 60-69% - Orange
-                             as.character(icon("frown", class = "fa-solid", style = "font-size: 24px;color: #E4465C;")))))))            # Riesgo Alto: 0-59% - Red
+                     if_else(val >= 80, as.character(icon("smile", class = "fa-solid", style = "font-size: 24px;color: #77C151;")),    # Riesgo bajo: 80-100% - Green
+                       if_else(val >= 70, as.character(icon("meh", class = "fa-solid", style = "font-size: 24px;color: #F1C429;")),   # Riesgo medio: 70-79% - Yellow
+                         as.character(icon("frown", class = "fa-solid", style = "font-size: 24px;color: #E4465C;")))))              # Riesgo alto: 0-69% - Red
                  }
           ) %>%
           relocate(n) %>%
