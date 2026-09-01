@@ -118,7 +118,8 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
         if (session$userData$rol %in% c('coach')) {
           tagList(
             actionButton(NS(id, "edit_button"), "Editar", class = "btn-success", icon("edit")),
-            actionButton(ns("mon_email_resend"), "Correo", class = "btn-success", icon = shiny::icon("paper-plane"))
+            actionButton(ns("mon_email_resend"), "Correo", class = "btn-success", icon = shiny::icon("paper-plane")),
+            actionButton(ns("estado_edit"), "Estado", class = "btn-success", icon = shiny::icon("pen-to-square"))
           )
         } else {
           if (!(session$userData$rol %in% c('asistente'))) {
@@ -131,7 +132,8 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
               tagList(
                 # actionButton(NS(id, "add_button"), "Inscribir", icon = shiny::icon("plus")),
                 actionButton(NS(id, "edit_button"), "Editar", class = "btn-success", icon("edit")),
-                actionButton(ns("mon_email_resend"), "Correo", class = "btn-success", icon = shiny::icon("paper-plane"))
+                actionButton(ns("mon_email_resend"), "Correo", class = "btn-success", icon = shiny::icon("paper-plane")),
+                actionButton(ns("estado_edit"), "Estado", class = "btn-success", icon = shiny::icon("pen-to-square"))
               )
             }
           }
@@ -144,7 +146,8 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
           tagList(
             # actionButton(ns("edit_button"), "Editar", class = "btn-success", icon("edit")),
             actionButton(ns("delete_button"), "Borrar", class = "btn-success", icon("trash-alt")),
-            actionButton(ns("mon_email_resend"), "Correo", class = "btn-success", icon = shiny::icon("paper-plane"))
+            actionButton(ns("mon_email_resend"), "Correo", class = "btn-success", icon = shiny::icon("paper-plane")),
+            actionButton(ns("estado_edit"), "Estado", class = "btn-success", icon = shiny::icon("pen-to-square"))
             # actionButton(ns("carga_masiva"), "Carga masiva", class = "btn-success")
             # selectInput("listado_empresas", "Clientes", choices = get_empresas(session$userData$rol, session$userData$email))
           )
@@ -178,7 +181,12 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
         solicitante = NULL,
         email_solicitante = NULL
       )
-       
+
+      estado_edit_params <- reactiveValues(
+        id_preparacion = NULL,
+        rut = NULL
+      )
+
        #load responses_df and make reactive to inputs
        responses_df <- reactive({
 
@@ -1250,7 +1258,68 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
          shinyjs::enable("email_reschedule_btn")
          removeModal()
        })
-       
+
+       observeEvent(input$estado_edit, {
+         ns <- session$ns
+
+         showModal(
+           if(length(input$responses_table_rows_selected) > 1 ){
+             modalDialog(
+               title = "Advertencia",
+               paste("Porfavor seleccione una sola fila." ),easyClose = TRUE)
+           } else if(length(input$responses_table_rows_selected) < 1){
+             modalDialog(
+               title = "Advertencia",
+               paste("Porfavor seleccione una fila." ),
+               footer = tagList(
+                 modalButton("Cerrar")
+               ),
+               easyClose = TRUE)
+           })
+
+         if (length(input$responses_table_rows_selected) == 1 ) {
+           SQL_df <- responses_df()
+           estado_edit_params$id_preparacion <- SQL_df[input$responses_table_rows_selected, "id_preparacion"]
+           estado_edit_params$rut <- SQL_df[input$responses_table_rows_selected, "rut"]
+
+           showModal(
+             modalDialog(
+               title = "Modificar Estado",
+               p(paste0("Rut: ", SQL_df[input$responses_table_rows_selected, "rut"])),
+               p(paste0("Participante: ", str_to_title(SQL_df[input$responses_table_rows_selected, "nombres"]), " ", str_to_title(SQL_df[input$responses_table_rows_selected, "apellidos"]))),
+               p(paste0("Cargo: ", str_to_title(SQL_df[input$responses_table_rows_selected, "cargo"]))),
+               selectInput(ns("estado_nuevo"), "Estado",
+                           choices = get_estados("estado_prep"),
+                           selected = SQL_df[input$responses_table_rows_selected, "estado"]),
+               easyClose = F,
+               footer = tagList(
+                 modalButton("Cancelar"),
+                 actionButton(ns("estado_save_btn"), "Guardar")
+               )
+             )
+           )
+         }
+
+       })
+
+       observeEvent(input$estado_save_btn, {
+         req(estado_edit_params$id_preparacion, input$estado_nuevo)
+
+         sqlq <- glue::glue_sql("UPDATE monitor_preparaciones
+                                set estado = {input$estado_nuevo},
+                                    last_change_by = {session$userData$email}
+                                WHERE id = {estado_edit_params$id_preparacion}", .con = pool)
+
+         dbExecute(pool, 'SET character set "utf8"')
+         dbExecute(pool, 'SET SQL_SAFE_UPDATES = 0')
+         dbExecute(pool, sqlq)
+         dbExecute(pool, 'SET SQL_SAFE_UPDATES = 1')
+         showNotification("Estado modificado.", type = "message")
+         removeModal()
+         dataChangedTrigger(dataChangedTrigger() + 1)
+
+       })
+
        # ================= END: INSCRIPCIONES =======================
 
        # ================= BEGIN: CARGA MASIVA (COMMENTED OUT) =======================
