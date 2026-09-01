@@ -677,7 +677,7 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                   # fecha_solicitud = format(as.Date(fecha_solicitud), format = "%d-%m-%y"),
                   fecha_preparacion = paste0(format(date(fecha_preparacion), format = "%d-%m-%y"), "<br>", sprintf("%02d:%02d", hour(lubridate::parse_date_time(horario, "%I:%M %p")), minute(lubridate::parse_date_time(horario, "%I:%M %p")))),
                   nombres_monitor = paste0(str_to_title(nombres_coach), " ", str_to_title(apellidos_coach)),
-                  estado = str_to_title(estado)
+                  estado = toupper(estado)
             ) %>%
            select(-apellidos, -solicitante_email, -solicitante_telefono, -nombre_empresa, -email, -telefono, -horario, -nombres_coach, -apellidos_coach) %>%
            relocate(solicitante, .after = cargo) %>%
