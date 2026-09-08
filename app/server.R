@@ -6,12 +6,21 @@
 # Sys.setlocale("LC_ALL", "es_ES.UTF-8")
 
 options(
-  shiny.reconnect = FALSE,
   shiny.maxRequestSize=40*1024^2
 )
 
 server = function(input, output, session) {
-  
+
+  # Permite que el cliente reintente la conexion si el websocket se cae de forma
+  # transitoria, en vez de quedar en la pantalla gris de "desconectado".
+  session$allowReconnect(TRUE)
+
+  # Recibe el ping del keepalive definido en ui.R. No hace nada: su unico proposito
+  # es generar trafico en el websocket para que no sea cerrado por inactividad.
+  observeEvent(input$keepalive, {
+    invisible(NULL)
+  }, ignoreInit = TRUE)
+
   # telemetry$start_session(
   #   track_inputs = FALSE, 
   #   navigation_input_id = "sidebar_menu",
