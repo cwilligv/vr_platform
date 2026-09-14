@@ -117,23 +117,23 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
         ns <- session$ns
         if (session$userData$rol %in% c('coach')) {
           tagList(
-            actionButton(NS(id, "edit_button"), "Editar", class = "btn-success", icon("edit")),
-            actionButton(ns("mon_email_resend"), "Correo", class = "btn-success", icon = shiny::icon("paper-plane")),
-            actionButton(ns("estado_edit"), "Estado", class = "btn-success", icon = shiny::icon("pen-to-square"))
+            actionButton(NS(id, "edit_button"), "Editar", class = "btn-success btn-selectable", icon("edit")),
+            actionButton(ns("mon_email_resend"), "Correo", class = "btn-success btn-selectable", icon = shiny::icon("paper-plane")),
+            actionButton(ns("estado_edit"), "Estado", class = "btn-success btn-selectable", icon = shiny::icon("pen-to-square"))
           )
         } else {
           if (!(session$userData$rol %in% c('asistente'))) {
             tagList(
-              actionButton(NS(id, "add_button"), "Inscribir", icon = shiny::icon("plus")),
-              actionButton(NS(id, "edit_button"), "Editar", class = "btn-success", icon("edit"))
+              actionButton(NS(id, "add_button"), "Inscribir", class = "btn-selectable", icon = shiny::icon("plus")),
+              actionButton(NS(id, "edit_button"), "Editar", class = "btn-success btn-selectable", icon("edit"))
             )
           } else {
             if (session$userData$rol %in% c('asistente')) {
               tagList(
                 # actionButton(NS(id, "add_button"), "Inscribir", icon = shiny::icon("plus")),
-                actionButton(NS(id, "edit_button"), "Editar", class = "btn-success", icon("edit")),
-                actionButton(ns("mon_email_resend"), "Correo", class = "btn-success", icon = shiny::icon("paper-plane")),
-                actionButton(ns("estado_edit"), "Estado", class = "btn-success", icon = shiny::icon("pen-to-square"))
+                actionButton(NS(id, "edit_button"), "Editar", class = "btn-success btn-selectable", icon("edit")),
+                actionButton(ns("mon_email_resend"), "Correo", class = "btn-success btn-selectable", icon = shiny::icon("paper-plane")),
+                actionButton(ns("estado_edit"), "Estado", class = "btn-success btn-selectable", icon = shiny::icon("pen-to-square"))
               )
             }
           }
@@ -145,9 +145,9 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
         if (session$userData$rol %in% c('admin')) {
           tagList(
             # actionButton(ns("edit_button"), "Editar", class = "btn-success", icon("edit")),
-            actionButton(ns("delete_button"), "Borrar", class = "btn-success", icon("trash-alt")),
-            actionButton(ns("mon_email_resend"), "Correo", class = "btn-success", icon = shiny::icon("paper-plane")),
-            actionButton(ns("estado_edit"), "Estado", class = "btn-success", icon = shiny::icon("pen-to-square"))
+            actionButton(ns("delete_button"), "Borrar", class = "btn-success btn-selectable", icon("trash-alt")),
+            actionButton(ns("mon_email_resend"), "Correo", class = "btn-success btn-selectable", icon = shiny::icon("paper-plane")),
+            actionButton(ns("estado_edit"), "Estado", class = "btn-success btn-selectable", icon = shiny::icon("pen-to-square"))
             # actionButton(ns("carga_masiva"), "Carga masiva", class = "btn-success")
             # selectInput("listado_empresas", "Clientes", choices = get_empresas(session$userData$rol, session$userData$email))
           )

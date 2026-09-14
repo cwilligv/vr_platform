@@ -266,6 +266,23 @@ convert_spanish_number <- function(x) {
   as.numeric(x)
 }
 
+# Utility for Pagos
+# Returns the allowed next choices given the current estado_id
+choices_siguientes_estado <- function(todos_estados, estado_actual_id) {
+  nombre_actual <- tolower(names(todos_estados)[todos_estados == estado_actual_id])
+
+  if (grepl("pendiente", nombre_actual)) {
+    # OC Pendiente → only Facturado
+    todos_estados[grepl("facturado", tolower(names(todos_estados)))]
+  } else if (grepl("facturado", nombre_actual)) {
+    # Facturado → only Pagado
+    todos_estados[grepl("pagado", tolower(names(todos_estados)))]
+  } else {
+    # Pagado → no further transitions
+    character(0)
+  }
+}
+
 generar_observacion <- function(notas) {
   chat <- chat_groq(
     api_key = env$LLM_API,
@@ -284,19 +301,19 @@ generar_observacion <- function(notas) {
   return(response)
 }
 
-generar_edp_excel <- function(table, fname, resumen){
+generar_edp_excel <- function(table, fname, resumen, numero_edp){
   ## Create a new workbook
   wb <- openxlsx::createWorkbook("MERC")
-  
+
   ## Add a worksheets
   openxlsx::addWorksheet(wb, "Estado de Pago")
-  
+
   ## Write title
   openxlsx::writeData(wb, sheet = 1, "ESTADO DE PAGO", startCol = 1, startRow = 1)
-  
-  # Merge cells from A1 to H3
-  openxlsx::mergeCells(wb, sheet = 1, rows = 1:3, cols = 1:9)
-  
+
+  # Merge cells from A1 to G3
+  openxlsx::mergeCells(wb, sheet = 1, rows = 1:3, cols = 1:7)
+
   # Create a style for the merged cells
   title_style <- createStyle(
     fontName = "Calibri",
@@ -307,10 +324,30 @@ generar_edp_excel <- function(table, fname, resumen){
     textDecoration = "bold",
     fgFill = "#4F81BD"
   )
-  
+
   # Apply the style to the merged cell range
-  openxlsx::addStyle(wb, sheet = 1, style = title_style, rows = 1:3, cols = 1:9, gridExpand = T)
-  
+  openxlsx::addStyle(wb, sheet = 1, style = title_style, rows = 1:3, cols = 1:7, gridExpand = T)
+
+  ## Write EDP number (right-aligned, same title bar)
+  openxlsx::writeData(wb, sheet = 1, paste("N°", numero_edp), startCol = 8, startRow = 1)
+
+  # Merge cells from H1 to I3 (EDP number)
+  openxlsx::mergeCells(wb, sheet = 1, rows = 1:3, cols = 8:9)
+
+  # Create a style for the EDP number - right aligned, same fill/font as title
+  numero_style <- createStyle(
+    fontName = "Calibri",
+    fontSize = 20,
+    fontColour = "white",
+    halign = "right",
+    valign = "center",
+    textDecoration = "bold",
+    fgFill = "#4F81BD"
+  )
+
+  # Apply the style to the merged EDP number range
+  openxlsx::addStyle(wb, sheet = 1, style = numero_style, rows = 1:3, cols = 8:9, gridExpand = T)
+
   ## Write tabla de resumen
   openxlsx::writeData(wb, sheet = 1, "RESUMEN DE SERVICIO", startCol = 3, startRow = 6)
   openxlsx::mergeCells(wb, sheet = 1, rows = 6, cols = 3:5)
