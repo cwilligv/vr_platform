@@ -147,11 +147,67 @@ get_coaches <- function(){
 }
 
 get_tarifas <- function(id_emp){
-  tarifa <- tbl(pool, "tarifas") %>% 
-    filter(id_empresa == id_emp) %>% 
-    select(tarifa_normal, tarifa_urgente, unidad_UF) %>% 
+  tarifa <- tbl(pool, "tarifas") %>%
+    filter(id_empresa == id_emp) %>%
+    select(tarifa_normal, tarifa_urgente, unidad_UF) %>%
     collect()
   return(tarifa)
+}
+
+get_tarifas_escalonadas <- function(id_emp) {
+  dbExecute(pool, 'SET character set "utf8"')
+
+  tiers <- tbl(pool, "tarifas_escalonadas") %>%
+    filter(id_empresa == id_emp) %>%
+    select(id_empresa, cantidad_min, cantidad_max, valor_unitario_uf, is_unidad_UF, orden) %>%
+    arrange(orden) %>%
+    collect()
+
+  if (nrow(tiers) == 0) {
+    tiers <- tbl(pool, "tarifas_escalonadas") %>%
+      filter(id_empresa == 0) %>%
+      select(id_empresa, cantidad_min, cantidad_max, valor_unitario_uf, is_unidad_UF, orden) %>%
+      arrange(orden) %>%
+      collect()
+    tiers$es_default <- TRUE
+  } else {
+    tiers$es_default <- FALSE
+  }
+
+  return(tiers)
+}
+
+get_tarifas_default <- function() {
+  dbExecute(pool, 'SET character set "utf8"')
+  tbl(pool, "tarifas_escalonadas") %>%
+    filter(id_empresa == 0) %>%
+    select(id_empresa, cantidad_min, cantidad_max, valor_unitario_uf, is_unidad_UF, orden) %>%
+    arrange(orden) %>%
+    collect()
+}
+
+guardar_tarifas_escalonadas <- function(id_emp, tiers_df) {
+  if (nrow(tiers_df) == 0) stop("No tiers provided")
+
+  required_cols <- c("cantidad_min", "cantidad_max", "valor_unitario_uf", "is_unidad_UF", "orden")
+  if (!all(required_cols %in% names(tiers_df))) stop("Missing required columns in tiers data")
+
+  tiers_df$id_empresa <- id_emp
+  save_df <- tiers_df %>% select(id_empresa, cantidad_min, cantidad_max, valor_unitario_uf, is_unidad_UF, orden)
+
+  poolWithTransaction(pool, function(conn) {
+    sql <- glue::glue_sql("DELETE FROM tarifas_escalonadas WHERE id_empresa = {id_emp}", .con = conn)
+    dbExecute(conn, sql)
+    dbWriteTable(conn, "tarifas_escalonadas", save_df, append = TRUE, row.names = FALSE)
+  })
+}
+
+resetear_a_tarifas_default <- function(id_emp) {
+  if (id_emp == 0) stop("Cannot reset system defaults")
+  sql <- glue::glue_sql("DELETE FROM tarifas_escalonadas WHERE id_empresa = {id_emp}", .con = pool)
+  dbExecute(pool, 'SET SQL_SAFE_UPDATES = 0')
+  dbExecute(pool, sql)
+  dbExecute(pool, 'SET SQL_SAFE_UPDATES = 1')
 }
 
 get_lista_emails <- function(id_emp){

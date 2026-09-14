@@ -140,13 +140,13 @@ pagos_server <- function(id, rv){
         ns <- session$ns
         table <- prefacturas_df() %>% 
           # select(-id_empresa, -rut_cliente, -razon_social, -valor_unitario) %>% 
-          select(fecha_servicio, nombre_fantasia, cantidad, total, estado) %>%
+          select(id, fecha_servicio, nombre_fantasia, cantidad, total, estado) %>%
           mutate(index = row_number(),
                  total = if_else(is.na(total), NA, paste0("$", formatC(as.numeric(total), format="f", digits=0, decimal.mark = ",", big.mark = "."))),
                  detalles = glue('<a id="custom_btn" onclick="Shiny.setInputValue(\'',ns('boton_detalles'),'\', \'{index}\', {{priority: \'event\'}})"><span class="glyphicon glyphicon-list-alt" style = "font-size: 24px;color: #D100FF;"></span></a>')) %>%
           relocate(index)
-        
-        names(table) <- c("n", "Fecha Servicio", "Empresa", "Cantidad", "Total", "Estado", "Detalles")
+
+        names(table) <- c("n", "Documento", "Fecha Servicio", "Empresa", "Cantidad", "Total", "Estado", "Detalles")
         
         table <- datatable(table,
                            #filter = "top",
@@ -155,7 +155,7 @@ pagos_server <- function(id, rv){
                            class = 'cell-border stripe',
                            selection = 'single',
                            options = list(searchHighlight = T, searching = T, lengthChange = F, scrollX = T, autoWidth = F, ordering = F,
-                                          columnDefs = list(list(targets = 0:6, search = FALSE),
+                                          columnDefs = list(list(targets = 0:7, search = FALSE),
                                                             list(targets = c(0), visible = FALSE),
                                                             list(className = 'dt-center', targets = "_all")),
                                           language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')
@@ -170,7 +170,7 @@ pagos_server <- function(id, rv){
                                           #   #)
                                           # )
                            ),
-                           callback = JS(paste0("var tips = ['Index', 'Fecha de Servicio', 'Empresa', 'Cantidad', 'Total', 'Estado OC', 'Detalles de Estado de Pago'],
+                           callback = JS(paste0("var tips = ['Index', 'Nro. Documento EDP', 'Fecha de Servicio', 'Empresa', 'Cantidad', 'Total', 'Estado OC', 'Detalles de Estado de Pago'],
                                             firstRow = $('#",session$ns('prefacturas_table')," thead tr th');
                                             for (var i = 0; i < tips.length; i++) {
                                               $(firstRow[i]).attr('title', tips[i]);
@@ -185,7 +185,7 @@ pagos_server <- function(id, rv){
         obs <- prefacturas_df() %>% 
           mutate(index = row_number()) %>% 
           filter(index == as.numeric(input$boton_detalles)) %>% 
-          select(id_empresa, razon_social, nombre_fantasia, rut_cliente, valor_unitario, valor_unitario_uf, fecha_uf, fecha_servicio, cantidad, total, moneda, email_enviados) %>% 
+          select(id, id_empresa, razon_social, nombre_fantasia, rut_cliente, valor_unitario, valor_unitario_uf, fecha_uf, fecha_servicio, cantidad, total, moneda, email_enviados) %>%
           mutate(
             # valor_unitario = if_else(is.na(valor_unitario), '', paste0("$", formatC(as.numeric(valor_unitario), format="f", digits=0, decimal.mark = ",", big.mark = "."))),
             valor_unitario_uf = paste0(formatC(as.numeric(valor_unitario_uf), format="f", digits=ifelse(moneda == 'UF', 1, 0), decimal.mark = ",", big.mark = "."), if_else(moneda == 'UF',paste0(" UF al ", format(as.Date(fecha_uf), "%d-%m-%y")),' CLP')),
@@ -194,6 +194,7 @@ pagos_server <- function(id, rv){
         print(paste0("id clicked: ", as.numeric(input$boton_detalles)))
         print(obs)
         
+        prefactura_detalle_params$id_edp <- obs$id
         prefactura_detalle_params$id_empresa <- obs$id_empresa
         prefactura_detalle_params$nombre_fantasia <- obs$nombre_fantasia
         prefactura_detalle_params$mes <- obs$fecha_servicio
@@ -370,7 +371,7 @@ pagos_server <- function(id, rv){
             # textOutput(ns("detalles_subtitulo_fecha_servicio")),
           ),
           tags$div(id = session$ns("constraintPlaceholder2")),
-          title = tags$span("Estado de Pago", tags$img(src = "images/merc_720.png", width = "15%", height = "15%", style = "vertical-align: middle; float: right;")),
+          title = tags$span(paste0("Estado de Pago - ",prefactura_detalle_params$id_edp), tags$img(src = "images/merc_720.png", width = "15%", height = "15%", style = "vertical-align: middle; float: right;")),
           footer = tagList(
             actionButton(ns("close_obs"), "Cerrar")
           ),
@@ -451,7 +452,7 @@ pagos_server <- function(id, rv){
                      Valor = valor_unitario
               )
             
-            excel <- generar_edp_excel(table, filename, prefactura_detalle_params$resumen)
+            excel <- generar_edp_excel(table, filename, prefactura_detalle_params$resumen, prefactura_detalle_params$id_edp)
             if (!excel) {
               setProgress(0.8, message = "Error generando excel")
             }
@@ -486,6 +487,7 @@ pagos_server <- function(id, rv){
       })
       
       prefactura_detalle_params <- reactiveValues(
+        id_edp = NULL,
         id_empresa = 0,
         nombre_fantasia = NULL,
         mes = NULL,
@@ -570,7 +572,7 @@ pagos_server <- function(id, rv){
           # ## save
           # openxlsx::saveWorkbook(wb, fname, overwrite = TRUE)
           
-          generar_edp_excel(table, fname, prefactura_detalle_params$resumen)
+          generar_edp_excel(table, fname, prefactura_detalle_params$resumen, prefactura_detalle_params$id_edp)
         }
       )
       
@@ -660,6 +662,12 @@ pagos_server <- function(id, rv){
             fluidRow(
               selectInput(ns("empresa_seleccionada"), "Clientes", choices = c('Seleccionar cliente'=-1, get_empresas(session$userData$rol, session$userData$email)), selected = " "),
               selectInput(ns("mes_seleccionado"), "Periodo de Servicio", choices = format(rev(seq(ymd('2020-01-01'),ymd(today(tzone = "Chile/Continental")), by = 'months')),'%m-%Y')),
+              # Tarifas escalonadas vigentes. El valor unitario aplicado lo resuelve
+              # el trigger segun la cantidad de participantes del periodo.
+              tags$label("Tarifas Escalonadas Vigentes"),
+              uiOutput(ns("tarifa_status_ep")),
+              div(DT::dataTableOutput(ns("tabla_tarifas_ep")), style = "font-size:75%"),
+              br(),
               layout_column_wrap(
                 width = 1/2,
                 textInput(ns("valor_unitario"), "Valor Unitario", value = ""),
@@ -688,9 +696,9 @@ pagos_server <- function(id, rv){
             modalButton("Cancelar"),
             actionButton(ns("generar_btn"), "Generar")
           ),
-          easyClose = TRUE, size = "s"
+          easyClose = TRUE, size = "m"
         ))
-        
+
         shinyjs::disable("generar_btn")
         shinyjs::disable("valor_unitario")
         shinyjs::disable("valor_unidad")
@@ -699,25 +707,97 @@ pagos_server <- function(id, rv){
 
       })
       
-      observeEvent(input$empresa_seleccionada, {
-        tarifa <- get_valores_unitarios(as.numeric(input$empresa_seleccionada))
-        updateTextInput(session, "valor_unitario", value = as.character(sub(".",",", tarifa$tarifa_normal, fixed = T)))
-        updateRadioButtons(session, inputId = "valor_unidad", selected = tarifa$unidad_UF)
-        # updateSwitchInput(session, "valor_unidad", value = tarifa$unidad_UF)
-        print(paste0("Es TRUE?: ", tarifa$unidad_UF))
+      # Tarifas escalonadas de la empresa seleccionada en el modal "Generar EP"
+      tarifas_ep <- reactiveVal(NULL)
 
-        if (input$valor_unidad == 1) {
+      observeEvent(input$empresa_seleccionada, {
+        id_emp <- as.numeric(input$empresa_seleccionada)
+
+        if (id_emp < 0) {
+          tarifas_ep(NULL)
+          shinyjs::disable("generar_btn")
+          return()
+        }
+
+        tarifas <- get_tarifas_escalonadas(id_emp)
+        tarifas_ep(tarifas)
+
+        # Sin tramos configurados (ni propios ni por defecto) el trigger no puede
+        # resolver la tarifa, por lo que no se permite generar el EDP.
+        if (nrow(tarifas) == 0) {
+          shinyjs::disable("generar_btn")
+          shinyalert::shinyalert(
+            title = "Sin tarifas configuradas",
+            text = "No existen tramos de tarifas para esta empresa ni por defecto en el sistema",
+            type = "warning"
+          )
+          return()
+        }
+
+        # El valor unitario aplicado depende de la cantidad de participantes del
+        # periodo y lo resuelve obtener_tarifa_por_cantidad() en el trigger, por lo
+        # que el campo queda vacio y solo se usa como tarifa unica cuando se marca
+        # "Usar otro valor unitario".
+        updateTextInput(session, "valor_unitario", value = "")
+
+        es_uf <- as.numeric(tarifas$is_unidad_UF[1])
+        updateRadioButtons(session, inputId = "valor_unidad", selected = es_uf)
+        print(paste0("Es TRUE?: ", es_uf))
+
+        if (es_uf == 1) {
           shinyjs::enable("usar_valor_uf")
         } else {
           shinyjs::disable("usar_valor_uf")
         }
 
-        if (as.numeric(input$empresa_seleccionada) >= 0) {
-          shinyjs::enable("generar_btn")
-        }else{
-          shinyjs::disable("generar_btn")
-        }
+        shinyjs::enable("generar_btn")
       }, ignoreInit = TRUE)
+
+      output$tarifa_status_ep <- renderUI({
+        tarifas <- tarifas_ep()
+        if (is.null(tarifas) || nrow(tarifas) == 0) return(NULL)
+
+        unidad <- ifelse(as.numeric(tarifas$is_unidad_UF[1]) == 1, "UF", "CLP")
+
+        if (as.numeric(input$empresa_seleccionada) == 0) {
+          tags$div(class = "alert alert-secondary", style = "margin-top: 5px; padding: 8px;",
+                   icon("info-circle"), " Tarifas por defecto del sistema. Cada empresa con tarifas personalizadas usa las propias. ",
+                   tags$strong(paste0("Unidad: ", unidad)))
+        } else if (tarifas$es_default[1]) {
+          tags$div(class = "alert alert-secondary", style = "margin-top: 5px; padding: 8px;",
+                   icon("info-circle"), " Esta empresa usa las tarifas por defecto del sistema. ",
+                   tags$strong(paste0("Unidad: ", unidad)))
+        } else {
+          tags$div(class = "alert alert-success", style = "margin-top: 5px; padding: 8px;",
+                   icon("check-circle"), " Esta empresa tiene tarifas personalizadas. ",
+                   tags$strong(paste0("Unidad: ", unidad)))
+        }
+      })
+
+      output$tabla_tarifas_ep <- DT::renderDataTable({
+        tarifas <- tarifas_ep()
+        req(tarifas)
+
+        display_df <- tarifas %>%
+          mutate(
+            Desde = cantidad_min,
+            Hasta = ifelse(is.na(cantidad_max), "Sin límite", as.character(cantidad_max)),
+            `Valor Unitario` = valor_unitario_uf
+          ) %>%
+          select(Desde, Hasta, `Valor Unitario`)
+
+        datatable(display_df,
+                  selection = "none",
+                  rownames = FALSE,
+                  options = list(
+                    dom = "t",
+                    paging = FALSE,
+                    searching = FALSE,
+                    ordering = FALSE,
+                    columnDefs = list(list(className = 'dt-center', targets = '_all')),
+                    language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')
+                  ))
+      })
       
       observeEvent(input$mes_seleccionado, {
         print(paste0("Mes seleccionado: ", lubridate::my(input$mes_seleccionado)))
@@ -781,10 +861,39 @@ pagos_server <- function(id, rv){
       })
       
       observeEvent(input$generar_btn, {
+        # Check if the selected month has finished
+        selected_month <- lubridate::my(input$mes_seleccionado)
+        last_day_of_month <- lubridate::rollforward(selected_month)
+        current_date <- lubridate::today(tzone = "Chile/Continental")
+
+        if (last_day_of_month >= current_date) {
+          # Month hasn't finished yet
+          shinyalert::shinyalert(
+            title = "Mes aún en curso",
+            text = "EDPs pueden crearse los primeros días de cada mes terminado",
+            type = "warning"
+          )
+          return()
+        }
+
+        # Al usar otra tarifa se omite el sistema escalonado, por lo que el valor
+        # ingresado debe ser valido para no generar el EDP con valor unitario 0.
+        if (input$usar_valor_unitario) {
+          valor_ingresado <- convert_spanish_number(input$valor_unitario)
+          if (is.na(valor_ingresado) || valor_ingresado <= 0) {
+            shinyalert::shinyalert(
+              title = "Valor unitario inválido",
+              text = "Ingrese un valor unitario mayor a 0 para usar otra tarifa",
+              type = "warning"
+            )
+            return()
+          }
+        }
+
         withProgress(
           message = "Generando Estado de Pago...",
           detail = "Iniciando procedimiento...", value = 0,{
-            
+
             if (input$usar_valor_unitario) {
               # nuevo_valor_unitario <- as.numeric(input$valor_unitario)
               # nuevo_valor_unitario <- as.numeric(sub(",", ".", input$valor_unitario, fixed = TRUE))
@@ -876,8 +985,22 @@ pagos_server <- function(id, rv){
           updateTextInput(session, "total_ep", value = SQL_df[input$prefacturas_table_rows_selected, "total"])
           updateTextInput(session, "valor_unitario_ep", value = paste0("$", formatC(as.numeric(SQL_df[input$prefacturas_table_rows_selected, "valor_unitario"]), format="f", digits=0, decimal.mark = ",", big.mark = ".")))
           # updateSelectInput(session, "estado_oc", choices = get_estados('oc'), selected = SQL_df[input$prefacturas_table_rows_selected, "oc_id"])
-          updateSelectInput(session, "estado_pago_factura", choices = get_estados('factura'), selected = SQL_df[input$prefacturas_table_rows_selected, "estado_id"])
-          
+          # updateSelectInput(session, "estado_pago_factura", choices = get_estados('factura'), selected = SQL_df[input$prefacturas_table_rows_selected, "estado_id"])
+
+          todos_estados_factura <- get_estados('factura')
+          estado_actual_id <- SQL_df[input$prefacturas_table_rows_selected, "estado_id"]
+          estado_actual_nombre <- names(todos_estados_factura)[todos_estados_factura == estado_actual_id]
+          siguientes <- choices_siguientes_estado(todos_estados_factura, estado_actual_id)
+
+          updateSelectInput(
+            session, "estado_pago_factura",
+            choices  = c(setNames(estado_actual_id, estado_actual_nombre), siguientes),
+            selected = estado_actual_id
+          )
+
+          # Disable the button entirely if there are no valid transitions (Pagado)
+          if (length(siguientes) == 0) shinyjs::disable("guardar_ep_btn")
+
           shinyjs::disable("fecha_servicio_ep")
           shinyjs::disable("empresa_ep")
           shinyjs::disable("cantidad_ep")
