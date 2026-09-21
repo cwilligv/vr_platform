@@ -372,7 +372,7 @@ server = function(input, output, session) {
       if (user()$rol %in% c('admin', 'cliente', 'coordinador')) {
         print("Desplegando menu satisfaccion")
         menuItem(
-          text = "Satisfaccion",
+          text = "Satisfacción",
           tabName = "tab_encuestas",
           icon = icon("heart", lib = "font-awesome")
         )
