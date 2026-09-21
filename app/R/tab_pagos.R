@@ -216,7 +216,7 @@ pagos_server <- function(id, rv){
         
         tbl1 <- data.frame(
           titulo = c("Empresa:", "Rut:","Fecha Servicio:","Descripcion:",paste0("Valor Unitario (", obs$moneda,"):"),"Cantidad:","Total (Exento):", "Condiciones:"),
-          valor = c(obs$razon_social, obs$rut_cliente, obs$fecha_servicio, "Capacitación 3D", obs$valor_unitario_uf, obs$cantidad, obs$total, "Saldo a pagar en 30 días (Servicio Exento de IVA).")
+          valor = c(obs$razon_social, obs$rut_cliente, obs$fecha_servicio, "Evaluación VRisk", obs$valor_unitario_uf, obs$cantidad, obs$total, "Saldo a pagar en 30 días (Servicio Exento de IVA).")
         )
         
         prefactura_detalle_params$resumen <- tbl1 
@@ -288,10 +288,10 @@ pagos_server <- function(id, rv){
           prefactura_detalle_params$detalles <- table
           
           table <- table %>% 
-            select(index, rut, participante, cargo, centro_de_costo, fecha_solicitud, fecha_preparacion, valor_unitario)
-            
-          
-          names(table) <- c('n', 'Rut', 'Participante', 'Cargo', 'Contrato', 'Fecha Solicitud', 'Fecha Capacitación', 'Valor')
+            select(index, rut, participante, cargo, solicitante, fecha_solicitud, fecha_preparacion, valor_unitario)
+
+
+          names(table) <- c('n', 'Rut', 'Participante', 'Cargo', 'Solicitante', 'Fecha Solicitud', 'Fecha Capacitación', 'Valor')
           
           table <- datatable(table,
                              #filter = "top",
@@ -434,19 +434,19 @@ pagos_server <- function(id, rv){
             setProgress(0.6, message = "Generando archivo")
             filename = paste0("EDP_Capacitación3D_", prefactura_detalle_params$nombre_fantasia, "_",prefactura_detalle_params$mes,".xlsx")
             table <- prefactura_detalle_params$detalles %>% 
-              select(index, rut, nombres, apellidos, cargo, centro_de_costo, -fecha_solicitud, fecha_preparacion, valor_unitario) %>% 
+              select(index, rut, nombres, apellidos, cargo, solicitante, -fecha_solicitud, fecha_preparacion, valor_unitario) %>%
               mutate(
                 nombres = str_to_title(nombres),
                 apellidos = str_to_title(apellidos),
                 cargo = str_to_title(cargo),
-                centro_de_costo = str_to_title(centro_de_costo)
-              ) %>% 
-              rename(n = index, 
-                     Rut = rut, 
+                solicitante = str_to_title(solicitante)
+              ) %>%
+              rename(n = index,
+                     Rut = rut,
                      Nombres = nombres,
                      Apellidos = apellidos,
-                     Cargo = cargo, 
-                     Contrato = centro_de_costo, 
+                     Cargo = cargo,
+                     Solicitante = solicitante,
                      # `Fecha Solicitud` = fecha_solicitud,
                      `Fecha Capacitacion` = fecha_preparacion, 
                      Valor = valor_unitario
@@ -507,19 +507,19 @@ pagos_server <- function(id, rv){
         filename = function(){paste0("EDP_Capacitación3D_", prefactura_detalle_params$nombre_fantasia, "_(",prefactura_detalle_params$mes,").xlsx")},
         content = function(fname){
           table <- prefactura_detalle_params$detalles %>% 
-            select(index, rut, nombres, apellidos, cargo, centro_de_costo, -fecha_solicitud, fecha_preparacion, valor_unitario) %>% 
+            select(index, rut, nombres, apellidos, cargo, solicitante, -fecha_solicitud, fecha_preparacion, valor_unitario) %>%
             mutate(
               nombres = str_to_title(nombres),
               apellidos = str_to_title(apellidos),
               cargo = str_to_title(cargo),
-              centro_de_costo = str_to_title(centro_de_costo)
-            ) %>% 
-            rename(n = index, 
-                   Rut = rut, 
+              solicitante = str_to_title(solicitante)
+            ) %>%
+            rename(n = index,
+                   Rut = rut,
                    Nombres = nombres,
                    Apellidos = apellidos,
-                   Cargo = cargo, 
-                   Contrato = centro_de_costo, 
+                   Cargo = cargo,
+                   Solicitante = solicitante,
                    # `Fecha Solicitud` = fecha_solicitud,
                    `Fecha Capacitacion` = fecha_preparacion, 
                    Valor = valor_unitario
@@ -588,7 +588,7 @@ pagos_server <- function(id, rv){
                 apellidos = str_to_title(apellidos),
                 index = row_number()
               ) %>%
-          select(index, rut, nombres, apellidos, cargo, centro_de_costo, fecha_solicitud, fecha_preparacion)
+          select(index, rut, nombres, apellidos, cargo, solicitante, fecha_solicitud, fecha_preparacion)
         # table <- tbl(pool, "prefactura_details_view") %>% 
         #   filter(id_empresa == !!prefactura_detalle_params$id_empresa & fecha_servicio == !!prefactura_detalle_params$fecha_servicio) %>% 
         #   select(-id_empresa, - fecha_servicio, -nombre_fantasia) %>% 
@@ -600,7 +600,7 @@ pagos_server <- function(id, rv){
         #   select(-apellidos) %>% 
         #   relocate(index)
         print(head(table))
-        names(table) <- c('n', 'Rut', 'Participante', 'Cargo', 'Contrato/Proyecto', 'Fecha Solicitud', 'Fecha Capacitación')
+        names(table) <- c('n', 'Rut', 'Participante', 'Cargo', 'Solicitante', 'Fecha Solicitud', 'Fecha Capacitación')
         table
       })
       
