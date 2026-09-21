@@ -83,15 +83,21 @@ gestion_clientes_server <- function(id){
                       ),
                       tabPanel(
                         title = "Tarifas",
+                        br(),
+                        uiOutput(NS(id, "tarifa_status")),
                         fluidRow(
                           column(
-                            width = 4, 
-                            align = "left", 
-                            br(), 
-                            radioButtons(NS(id, "unidad_moneda"), "Unidad Moneda", choices = c("UF" = 1, "CLP" = 0), inline = TRUE),
-                            textInput(NS(id, "tarifa_normal"), "Valor Unitario", width = "50%"), 
-                            # textInput(NS(id, "tarifa_urgente"), "Servicio Urgente", width = "50%"), 
-                            actionButton(NS(id, "save_tarifa"), "Guardar"))
+                            width = 5,
+                            div(DT::DTOutput(NS(id, "tabla_tarifas")), style = "font-size:75%")
+                          )
+                        ),
+                        br(),
+                        fluidRow(
+                          column(width = 12,
+                            actionButton(NS(id, "editar_tarifas"), "Editar Tarifas", class = "btn-success", icon = icon("edit")),
+                            actionButton(NS(id, "resetear_tarifas"), "Usar Tarifas por Defecto", class = "btn-warning", icon = icon("undo")),
+                            actionButton(NS(id, "ver_tarifas_default"), "Ver Tarifas Sistema", class = "btn-info", icon = icon("eye"))
+                          )
                         )
                       )
                       # tabPanel(
@@ -168,7 +174,7 @@ gestion_clientes_server <- function(id){
                            escape = FALSE,
                            class = 'cell-border stripe',
                            selection = 'single',
-                           options = list(searchHighlight = T, searching = TRUE, lengthChange = TRUE, autoWidth = TRUE, 
+                           options = list(searchHighlight = T, searching = TRUE, lengthChange = TRUE, scrollX = TRUE, autoWidth = FALSE, 
                                           columnDefs = list(list(targets = 0, visible = FALSE)),
                                           language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')))
       })
@@ -205,15 +211,65 @@ gestion_clientes_server <- function(id){
                                           language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')))
       })
       
+      # Render de la pestaña Tarifas (tramos vigentes) para la empresa indicada
+      mostrar_tarifas_empresa <- function(id_emp) {
+        tarifas_data <- get_tarifas_escalonadas(id_emp)
+
+        output$tarifa_status <- renderUI({
+          if (nrow(tarifas_data) == 0) {
+            return(
+              tags$div(class = "alert alert-warning", style = "margin-top: 5px;",
+                icon("exclamation-triangle"), " No existen tramos de tarifas para esta empresa ni por defecto en el sistema.")
+            )
+          }
+
+          unidad <- ifelse(tarifas_data$is_unidad_UF[1] == 1, "UF", "CLP")
+
+          if (tarifas_data$es_default[1]) {
+            tags$div(class = "alert alert-secondary", style = "margin-top: 5px;",
+              icon("info-circle"), " Esta empresa usa las tarifas por defecto del sistema. ",
+              tags$strong(paste0("Unidad: ", unidad))
+            )
+          } else {
+            tags$div(class = "alert alert-success", style = "margin-top: 5px;",
+              icon("check-circle"), " Esta empresa tiene tarifas personalizadas. ",
+              tags$strong(paste0("Unidad: ", unidad))
+            )
+          }
+        })
+
+        output$tabla_tarifas <- DT::renderDataTable({
+          display_df <- tarifas_data %>%
+            mutate(
+              `Desde` = cantidad_min,
+              `Hasta` = ifelse(is.na(cantidad_max), "Sin límite", as.character(cantidad_max)),
+              `Valor Unitario` = valor_unitario_uf
+            ) %>%
+            select(`Desde`, `Hasta`, `Valor Unitario`)
+
+          datatable(display_df,
+                    selection = "none",
+                    rownames = FALSE,
+                    options = list(
+                      dom = "t",
+                      paging = FALSE,
+                      searching = FALSE,
+                      ordering = FALSE,
+                      columnDefs = list(list(className = 'dt-left', targets = '_all')),
+                      language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')
+                    ))
+        })
+      }
+
       observeEvent(input$clientes_table_rows_selected, {
         SQL_df <- clientes_df()
         id_empresa <- SQL_df[input$clientes_table_row_last_clicked,]$id_empresa
         info <- get_estado_pago_info(id_empresa)
-        tarifas <- get_tarifas(id_empresa)
         # lista_emails <- get_lista_emails(id_empresa)
         
         output$usuarios_table <- DT::renderDataTable({
           print("rendering table")
+          
           table <- get_users(id_empresa) %>% 
             mutate(
               ultimo_login = if_else(
@@ -256,9 +312,8 @@ gestion_clientes_server <- function(id){
         
         updateTextInput(session, "email_estado_pago", value = info$email_para_envios)
         updateTextInput(session, "email_estado_pago_cc", value = info$email_para_envios_cc)
-        updateTextInput(session, "tarifa_normal", value = as.character(sub(".",",", tarifas$tarifa_normal, fixed = T)))
-        # updateTextInput(session, "tarifa_urgente", value = as.character(sub(".",",", tarifas$tarifa_urgente, fixed = T)))
-        updateRadioButtons(session, "unidad_moneda", selected = tarifas$unidad_UF)
+        # Render tiered pricing table for selected empresa
+        mostrar_tarifas_empresa(id_empresa)
         # updateTextInput(session, "emails_notificacion", value = lista_emails)
         # updateTextInput(session, "link", value = get_link_factura(id_empresa))
       })
@@ -401,7 +456,7 @@ gestion_clientes_server <- function(id){
                      column(6, textInput(ns("user_email"), "Email", placeholder = ""))),
             fluidRow(column(6, textInput(ns("user_cargo"), "Cargo Empresa", placeholder = "")),
                      column(6, textInput(ns("user_password"), "Password", placeholder = ""))),
-            fluidRow(column(6, selectInput(ns("user_rol"), "Rol Plataforma", choices = c("Admin"="admin", "Cliente"="cliente", "Cliente Jefatura"="cliente_jefatura", "Coach"="coach", "Administrativo"="administrativo", "Coordinador"="coordinador"), selected = "cliente")),
+            fluidRow(column(6, selectInput(ns("user_rol"), "Rol Plataforma", choices = c("Admin"="admin", "Cliente"="cliente", "Cliente Jefatura"="cliente_jefatura", "Coach"="coach", "Administrativo"="administrativo", "Coordinador"="coordinador", "Asistente"="asistente"), selected = "cliente")),
                      column(6, div(checkboxInput(ns("user_blocked"), "Usuario Bloqueado", value = FALSE), style = "margin-top: 37px;"))),
             # NEW: Inactivity checkbox (only shown in edit mode)
             if (edit_mode) {
@@ -795,22 +850,176 @@ gestion_clientes_server <- function(id){
       })
       
       #************************************
-      #* BOTON GUARDAR TARIFA
+      #* BOTON EDITAR TARIFAS (modal con tabla editable)
       #* **********************************
-      observeEvent(input$save_tarifa, {
-        print(paste0("Estoy en: ",input$client_tabs))
-        
+      tarifas_edit_rv <- reactiveVal(NULL)
+
+      observeEvent(input$editar_tarifas, {
         if (is.null(input$clientes_table_rows_selected)) {
-          print("no cliente seleccionado")
           showNotification("Seleccione un cliente primero.", type = "warning")
-        }else{
-          # print(paste0("row clinked: ",input$clientes_table_rows_selected))
-          id_emp <- dbReadTable(pool, "clientes") %>% filter(row_number() == input$clientes_table_rows_selected) %>% select(id_empresa) %>% pull()
-          response <- save_tarifa(id_emp, input$tarifa_normal, NA, input$unidad_moneda)
-          showNotification("Tarifa guardada.", type = "message")
+          return()
         }
+
+        id_emp <- dbReadTable(pool, "clientes") %>% filter(row_number() == input$clientes_table_rows_selected) %>% select(id_empresa) %>% pull()
+        tiers <- get_tarifas_escalonadas(id_emp)
+
+        if (nrow(tiers) == 0) {
+          showNotification("No existen tramos de tarifas para editar.", type = "warning")
+          return()
+        }
+
+        # Store editable copy in reactiveVal
+        edit_df <- tiers %>%
+          mutate(cantidad_max = ifelse(is.na(cantidad_max), NA_integer_, cantidad_max)) %>%
+          select(cantidad_min, cantidad_max, valor_unitario_uf)
+        tarifas_edit_rv(edit_df)
+
+        ns <- session$ns
+        showModal(modalDialog(
+          title = "Editar Tarifas",
+          size = "l",
+          radioButtons(ns("edit_unidad_moneda"), "Unidad Moneda", choices = c("UF" = 1, "CLP" = 0),
+                       selected = tiers$is_unidad_UF[1], inline = TRUE),
+          helpText("Doble click en una celda para editarla. 'Hasta' vacío = sin límite superior."),
+          DT::DTOutput(ns("tabla_tarifas_edit")),
+          footer = tagList(
+            modalButton("Cancelar"),
+            actionButton(ns("guardar_tarifas"), "Guardar", class = "btn-success", icon = icon("save"))
+          ),
+          easyClose = FALSE
+        ))
       })
-      
+
+      output$tabla_tarifas_edit <- DT::renderDataTable({
+        df <- tarifas_edit_rv()
+        req(df)
+
+        display_df <- df %>%
+          rename(Desde = cantidad_min, Hasta = cantidad_max, `Valor Unitario` = valor_unitario_uf)
+
+        datatable(display_df,
+                  editable = TRUE,
+                  selection = "none",
+                  rownames = FALSE,
+                  options = list(
+                    dom = "t",
+                    paging = FALSE,
+                    searching = FALSE,
+                    ordering = FALSE
+                  ))
+      })
+
+      observeEvent(input$tabla_tarifas_edit_cell_edit, {
+        info <- input$tabla_tarifas_edit_cell_edit
+        df <- tarifas_edit_rv()
+
+        row <- info$row
+        col <- info$col + 1
+        value <- info$value
+
+        if (col == 1) {
+          df[row, "cantidad_min"] <- as.integer(value)
+        } else if (col == 2) {
+          df[row, "cantidad_max"] <- if (is.na(value) || value == "" || value == "NA") NA_integer_ else as.integer(value)
+        } else if (col == 3) {
+          df[row, "valor_unitario_uf"] <- as.numeric(value)
+        }
+
+        tarifas_edit_rv(df)
+      })
+
+      observeEvent(input$guardar_tarifas, {
+        id_emp <- dbReadTable(pool, "clientes") %>% filter(row_number() == input$clientes_table_rows_selected) %>% select(id_empresa) %>% pull()
+        df <- tarifas_edit_rv()
+
+        # Validate
+        if (any(is.na(df$cantidad_min) | df$cantidad_min < 1)) {
+          showNotification("Todas las cantidades mínimas deben ser al menos 1.", type = "error")
+          return()
+        }
+        if (any(is.na(df$valor_unitario_uf) | df$valor_unitario_uf <= 0)) {
+          showNotification("Todos los valores unitarios deben ser mayores a 0.", type = "error")
+          return()
+        }
+
+        # Build tiers for saving
+        save_df <- df %>%
+          mutate(
+            is_unidad_UF = as.integer(input$edit_unidad_moneda),
+            orden = row_number()
+          )
+
+        tryCatch({
+          guardar_tarifas_escalonadas(id_emp, save_df)
+          removeModal()
+          showNotification("Tarifas guardadas exitosamente.", type = "message")
+
+          # Refresh main display
+          mostrar_tarifas_empresa(id_emp)
+        }, error = function(e) {
+          showNotification(paste("Error:", e$message), type = "error")
+        })
+      })
+
+      #************************************
+      #* BOTON RESETEAR A TARIFAS POR DEFECTO
+      #* **********************************
+      observeEvent(input$resetear_tarifas, {
+        if (is.null(input$clientes_table_rows_selected)) {
+          showNotification("Seleccione un cliente primero.", type = "warning")
+          return()
+        }
+
+        ns <- session$ns
+        showModal(modalDialog(
+          title = "Confirmar",
+          "¿Está seguro que desea resetear las tarifas a los valores por defecto del sistema?",
+          footer = tagList(
+            modalButton("Cancelar"),
+            actionButton(ns("confirmar_resetear"), "Sí, Resetear", class = "btn-danger")
+          ),
+          easyClose = TRUE
+        ))
+      })
+
+      observeEvent(input$confirmar_resetear, {
+        id_emp <- dbReadTable(pool, "clientes") %>% filter(row_number() == input$clientes_table_rows_selected) %>% select(id_empresa) %>% pull()
+
+        tryCatch({
+          resetear_a_tarifas_default(id_emp)
+          removeModal()
+          showNotification("Tarifas reseteadas a valores por defecto.", type = "message")
+
+          # Refresh table
+          mostrar_tarifas_empresa(id_emp)
+        }, error = function(e) {
+          showNotification(paste("Error:", e$message), type = "error")
+        })
+      })
+
+      #************************************
+      #* BOTON VER TARIFAS POR DEFECTO DEL SISTEMA
+      #* **********************************
+      observeEvent(input$ver_tarifas_default, {
+        defaults <- get_tarifas_default()
+
+        display_df <- defaults %>%
+          mutate(
+            `Desde` = cantidad_min,
+            `Hasta` = ifelse(is.na(cantidad_max), "Sin límite", as.character(cantidad_max)),
+            `Valor Unitario` = valor_unitario_uf
+          ) %>%
+          select(`Desde`, `Hasta`, `Valor Unitario`)
+
+        showModal(modalDialog(
+          title = "Tarifas por Defecto del Sistema",
+          renderTable(display_df, striped = TRUE, bordered = TRUE),
+          footer = modalButton("Cerrar"),
+          size = "m",
+          easyClose = TRUE
+        ))
+      })
+
       #*****************************************************
       #* BOTON GUARDAR NOTIFICACION de INSCRIPCION POR EMAIL
       #* ***************************************************
