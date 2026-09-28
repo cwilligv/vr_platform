@@ -196,7 +196,8 @@ monitor_avances_server <- function(id, rv){
             ) 
         }
         
-        chart
+        chart %>% 
+          hc_xAxis(title = list(text = "Fecha"))
       })
     }
   )
