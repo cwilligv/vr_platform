@@ -291,7 +291,7 @@ pagos_server <- function(id, rv){
             select(index, rut, participante, cargo, solicitante, fecha_solicitud, fecha_preparacion, valor_unitario)
 
 
-          names(table) <- c('n', 'Rut', 'Participante', 'Cargo', 'Solicitante', 'Fecha Solicitud', 'Fecha Capacitación', 'Valor')
+          names(table) <- c('n', 'Rut', 'Participante', 'Cargo', 'Solicitante', 'Fecha Solicitud', 'Fecha Evaluación', 'Valor')
           
           table <- datatable(table,
                              #filter = "top",
@@ -318,7 +318,7 @@ pagos_server <- function(id, rv){
                                             #   #)
                                             # )
                              ),
-                             callback = JS(paste0("var tips = ['Index','Rut', 'Nombre Participante', 'Cargo', 'Contrato/Proyecto', 'Fecha de Solicitud', 'Fecha de Capacitación', 'Valor Unitario'],
+                             callback = JS(paste0("var tips = ['Index','Rut', 'Nombre Participante', 'Cargo', 'Contrato/Proyecto', 'Fecha de Solicitud', 'Fecha de Evaluación', 'Valor Unitario'],
                                             firstRow = $('#",session$ns('detalles_prefactura')," thead tr th');
                                             for (var i = 0; i < tips.length; i++) {
                                               $(firstRow[i]).attr('title', tips[i]);
@@ -415,14 +415,14 @@ pagos_server <- function(id, rv){
         
         if (current_count == 0) {
           # First email (original email)
-          email_asunto <- paste0("Prefactura - Servicio Capacitación 3D (", prefactura_detalle_params$mes, ")")
+          email_asunto <- paste0("Prefactura - Servicio Evaluación VRisk (", prefactura_detalle_params$mes, ")")
           # Assuming the first email body is handled inside envio_email_pagos
           # or is the default if no body is passed.
           email_body <- NULL 
         } else {
           # Second email (reminder) or subsequent emails
           month_year <- prefactura_detalle_params$mes
-          email_asunto <- paste0("Recordatorio Prefactura - Servicio Capacitación 3D (", month_year, ")")
+          email_asunto <- paste0("Recordatorio Prefactura - Servicio Evaluación VRisk (", month_year, ")")
           email_body <- "Junto con saludar, recordarles que se encuentra <b>Pendiente Orden de Compra</b> correspondiente al <b>Estado de Pago</b> enviado anteriormente, según detalle en documento adjunto y resumen a continuación:"
         }
         
