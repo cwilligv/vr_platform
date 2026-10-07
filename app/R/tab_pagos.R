@@ -432,7 +432,7 @@ pagos_server <- function(id, rv){
             setProgress(0.3, message = "Recolectando datos")
             Sys.sleep(1)
             setProgress(0.6, message = "Generando archivo")
-            filename = paste0("EDP_Capacitación3D_", prefactura_detalle_params$nombre_fantasia, "_",prefactura_detalle_params$mes,".xlsx")
+            filename = paste0("EDP_EvaluacionVRisk_", prefactura_detalle_params$nombre_fantasia, "_",prefactura_detalle_params$mes,".xlsx")
             table <- prefactura_detalle_params$detalles %>% 
               select(index, rut, nombres, apellidos, cargo, solicitante, -fecha_solicitud, fecha_preparacion, valor_unitario) %>%
               mutate(
@@ -448,7 +448,7 @@ pagos_server <- function(id, rv){
                      Cargo = cargo,
                      Solicitante = solicitante,
                      # `Fecha Solicitud` = fecha_solicitud,
-                     `Fecha Capacitacion` = fecha_preparacion, 
+                     `Fecha Evaluacion` = fecha_preparacion, 
                      Valor = valor_unitario
               )
             
@@ -504,7 +504,7 @@ pagos_server <- function(id, rv){
       output$ep_download_excel <- downloadHandler(
         # TODO: nombre archivo debe llevar fecha de descarga
         # filename = function(){paste0("estado_pago_merc_(",prefactura_detalle_params$mes,").xlsx")},
-        filename = function(){paste0("EDP_Capacitación3D_", prefactura_detalle_params$nombre_fantasia, "_(",prefactura_detalle_params$mes,").xlsx")},
+        filename = function(){paste0("EDP_EvaluacionVRisk_", prefactura_detalle_params$nombre_fantasia, "_(",prefactura_detalle_params$mes,").xlsx")},
         content = function(fname){
           table <- prefactura_detalle_params$detalles %>% 
             select(index, rut, nombres, apellidos, cargo, solicitante, -fecha_solicitud, fecha_preparacion, valor_unitario) %>%
@@ -521,7 +521,7 @@ pagos_server <- function(id, rv){
                    Cargo = cargo,
                    Solicitante = solicitante,
                    # `Fecha Solicitud` = fecha_solicitud,
-                   `Fecha Capacitacion` = fecha_preparacion, 
+                   `Fecha Evaluacion` = fecha_preparacion, 
                    Valor = valor_unitario
             )
           
@@ -600,7 +600,7 @@ pagos_server <- function(id, rv){
         #   select(-apellidos) %>% 
         #   relocate(index)
         print(head(table))
-        names(table) <- c('n', 'Rut', 'Participante', 'Cargo', 'Solicitante', 'Fecha Solicitud', 'Fecha Capacitación')
+        names(table) <- c('n', 'Rut', 'Participante', 'Cargo', 'Solicitante', 'Fecha Solicitud', 'Fecha Evaluación')
         table
       })
       
@@ -915,7 +915,7 @@ pagos_server <- function(id, rv){
               m2 <- "No existen datos para generar EP"
               shinyalert::shinyalert(
                 title = "No es posible generar EP",
-                text = "No se realizaron capacitaciones en este periodo",
+                text = "No se realizaron evaluaciones en este periodo",
                 type = "warning"
               )
             }

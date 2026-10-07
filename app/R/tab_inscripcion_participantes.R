@@ -477,7 +477,7 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
        observeEvent(input$borrar_participante, {
          SQL_df <- responses_df()
          
-         row_selection <- SQL_df[input$responses_table_rows_selected, "id"]
+         row_selection <- SQL_df[input$responses_table_rows_selected, "id_participante"]
          #row_selection <- SQL_df[input$responses_table_row_last_clicked, "id"]
          print(paste0("Borrando participante con ID: ", row_selection))
          ahora <- ymd_hms(now(tzone = "Chile/Continental"))
@@ -551,11 +551,12 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
              updateSelectInput(session, "sexo", selected = SQL_df[input$responses_table_rows_selected, "sexo"])
              updateTextInput(session, "telefono", value = SQL_df[input$responses_table_rows_selected, "telefono"])
              updateTextInput(session, "email", value = SQL_df[input$responses_table_rows_selected, "email"])
-             updateSelectInput(session, "centrocosto", choices = get_centro_de_costos_por_participante(SQL_df[input$responses_table_rows_selected, "id"]), selected = SQL_df[input$responses_table_rows_selected, "centro_de_costo"])
+             updateSelectInput(session, "centrocosto", choices = get_centro_de_costos_por_participante(SQL_df[input$responses_table_rows_selected, "id_participante"]), selected = SQL_df[input$responses_table_rows_selected, "centro_de_costo"])
              updateTextInput(session, "cargo", value = SQL_df[input$responses_table_rows_selected, "cargo"])
              updateDateInput(session, "fecha_solicitud_urgente", value = SQL_df[input$responses_table_rows_selected, "fecha_preparacion"])
              updateSelectInput(session, "horario_edit", selected = SQL_df[input$responses_table_rows_selected, "horario"])
-             
+             updateCheckboxInput(session, "garantia", value = isTRUE(as.numeric(SQL_df[input$responses_table_rows_selected, "garantia"]) == 1))
+
              # updateDateInput(session, "fecha_online", value = SQL_df[input$responses_table_rows_selected, "fecha_online"])
              # updateDateInput(session, "fecha_presencial", value = SQL_df[input$responses_table_rows_selected, "fecha_presencial"])
              # updateCheckboxInput(session, "tipo_solicitud", value = SQL_df[input$responses_table_rows_selected, "urgencia"])
@@ -571,6 +572,10 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
              
              if (session$userData$rol %in% c('cliente')) {
                shinyjs::disable("email")
+             }
+             # La garantia solo la puede modificar admin o coach
+             if (!(session$userData$rol %in% c('admin','coach'))) {
+               shinyjs::disable("garantia")
              }
              # shinyjs::disable("fecha_online")
              # shinyjs::disable("fecha_presencial")
@@ -621,23 +626,19 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
          #   ) %>%
          #   data.table::setorder(-fecha_solicitud)
          SQL_df <- responses_df()
-         row_selection <- SQL_df[input$responses_table_row_last_clicked, "id"]
-         tipo_solicitud <- SQL_df[input$responses_table_row_last_clicked, "urgencia"]
-         f_online <- ifelse(length(input$fecha_online) == 0, as.character(NA), as.character(input$fecha_online))
-         f_presencial <- ifelse(length(input$fecha_presencial) == 0, as.character(NA), as.character(input$fecha_presencial))
+         row_selection <- SQL_df[input$responses_table_row_last_clicked, "id_participante"]
          print(row_selection)
-         # ps <- if_else(1 %in% as.vector(input$checkBoxGroup), 1, 0)
-         # co <- if_else(2 %in% as.vector(input$checkBoxGroup), 1, 0)
-         # cs <- if_else(3 %in% as.vector(input$checkBoxGroup), 1, 0)
-         # vr <- if_else(4 %in% as.vector(input$checkBoxGroup), 1, 0)
-         # tt <- if_else(5 %in% as.vector(input$checkBoxGroup), 1, 0)
-         # ge <- if_else(6 %in% as.vector(input$checkBoxGroup), 1, 0)
-         ps <- 0
-         co <- 0
-         cs <- 0
-         vr <- 0
-         tt <- 0
-         ge <- 0
+         # Solo se actualizan los campos visibles en el formulario de edicion.
+         # fecha_online, fecha_presencial y las subdimensiones (psicolaboral, vr, etc.) se conservan,
+         # ya que el formulario no las muestra y certificados_view las utiliza.
+         # Solo admin/coach pueden modificar la garantia, el resto conserva el valor actual
+         garantia_actual <- as.numeric(SQL_df[input$responses_table_row_last_clicked, "garantia"])
+         garantia_actual <- if_else(is.na(garantia_actual), 0, garantia_actual)
+         if (session$userData$rol %in% c('admin','coach')) {
+           ga <- if_else(isTRUE(input$garantia), 1, 0)
+         } else {
+           ga <- garantia_actual
+         }
          sqlq <- glue::glue_sql("UPDATE participantes set
                                  rut = {input$rut},
                                  nombres = {input$nombres},
@@ -648,15 +649,7 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                                  email = {input$email},
                                  centro_de_costo = {input$centrocosto},
                                  cargo = {input$cargo},
-                                 fecha_online = {f_online},
-                                 fecha_presencial = {f_presencial},
-                                 psicolaboral = {ps},
-                                 conductual = {co},
-                                 conocimiento_seguridad = {cs},
-                                 vr = {vr},
-                                 tecnico_teorico = {tt},
-                                 gestion = {ge},
-                                 urgencia = {as.numeric(tipo_solicitud)}
+                                 garantia = {ga}
                                 WHERE id = {row_selection}", .con = pool)
 
          dbExecute(pool, 'SET character set "utf8"')
@@ -695,23 +688,29 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
              # escena = as.character(NA)
            ) %>% 
            # relocate(escena, .before = urgencia) %>%
-           relocate(index) 
-         names(table) <- c("n", "Rut", "Participante","Contacto","Cargo","Solicitante", "Fecha <br>Solicitud", "Fecha <br>Evaluación", "Estado", "Monitor")
+           relocate(index) %>%
+           relocate(garantia, .after = last_col())
+         names(table) <- c("n", "Rut", "Participante","Contacto","Cargo","Solicitante", "Fecha <br>Solicitud", "Fecha <br>Evaluación", "Estado", "Monitor", "Garantia")
          table <- datatable(table, 
                             rownames = FALSE,
                             escape = FALSE,
                             class = 'cell-border stripe',
                             selection = 'single',
                             options = list(searchHighlight = T, searching = T, scrollX = T, autoWidth = F, ordering = F,
-                                           columnDefs = list(list(className = 'dt-center', targets = "_all")),
+                                           columnDefs = list(list(className = 'dt-center', targets = "_all"),
+                                                             list(targets = c(10), visible = FALSE)),
                                            language = list(url = 'https://cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')
                                            ),
-                            callback = JS(paste0("var tips = ['Index', 'Rut', 'Participante', 'Info de Contacto', 'Cargo', 'Contacto Solicitante', 'Fecha de Solicitud de Evaluación','Fecha Inicio de Evaluaciones','Estado', 'Nombre del Monitor'],
+                            callback = JS(paste0("var tips = ['Index', 'Rut', 'Participante', 'Info de Contacto', 'Cargo', 'Contacto Solicitante', 'Fecha de Solicitud de Evaluación','Fecha Inicio de Evaluaciones','Estado', 'Nombre del Monitor', 'Garantia'],
                                           firstRow = $('#",session$ns('responses_table')," thead tr th');
                                           for (var i = 0; i < tips.length; i++) {
                                             $(firstRow[i]).attr('title', tips[i]);
                                           }"))
-         )
+         ) %>%
+           formatStyle(columns = c("Rut"),
+                       valueColumns = c("Garantia"),
+                       border = styleEqual(1, '3px solid green')
+           )
            # formatStyle(columns = c("Fecha Solicitud"),
            #             valueColumns = c("Urgencia"),
            #             border = styleEqual(1, '3px solid #F1C429')
@@ -954,7 +953,8 @@ inscripcion_participantes_server <- function(id, user_rol, rv){
                    # br(),
                    # p("Ingrese a continuacion los datos del participante:"),
                    br(),
-                   fluidRow(column(6, textInput(ns("rut"), labelMandatory("Rut"), placeholder = "ej: 12345678-9"))),
+                   fluidRow(column(6, textInput(ns("rut"), labelMandatory("Rut"), placeholder = "ej: 12345678-9")),
+                            column(6, div(style = "margin-top: 32px;", checkboxInput(ns("garantia"), "Con garantia", value = FALSE)))),
                    fluidRow(column(6, textInput(ns("nombres"), labelMandatory("Nombres"), placeholder = "")),
                             column(6, textInput(ns("apellidos"), labelMandatory("Apellidos"), placeholder = ""))),
                    fluidRow(column(6, dateInput(ns("fecha_nacimiento"), labelMandatory("Fecha de Nacimiento"), language = "es", weekstart = 1, autoclose = T, value = NA, format = "dd-mm-yyyy")),
