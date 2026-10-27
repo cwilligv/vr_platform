@@ -176,15 +176,6 @@ ui <- dashboardPage(
                           tags$script(src = "https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.min.js"),
                           # js for cleaning up the url after two seconds
                           tags$script(htmlwidgets::JS("setTimeout(function(){history.pushState({}, 'Page Title', window.location.pathname);},2000);")),
-                          # Keepalive: envia trafico por el websocket cada 60s para que Cloud Run
-                          # no lo considere inactivo y lo cierre (pantalla gris de "desconectado").
-                          tags$script(HTML("
-                            $(document).on('shiny:connected', function() {
-                              setInterval(function() {
-                                Shiny.setInputValue('keepalive', Date.now());
-                              }, 60000);
-                            });
-                          ")),
                           tags$style(HTML("
                             .invalid-feedback {
                               color: red !important;
@@ -200,20 +191,8 @@ ui <- dashboardPage(
                         ),
                         extendShinyjs(text = jsCode, functions = c("getcookie", "setcookie", "rmcookie")),
                         tags$style(HTML(custom_css)),
-                        # Reemplaza la pantalla gris por defecto de Shiny con un mensaje y un boton
-                        # para recargar, cuando se pierde la conexion con el servidor.
-                        shinydisconnect::disconnectMessage(
-                          text = "Tu sesión en la plataforma ha terminado. Presiona refrescar para iniciar nuevamente.",
-                          refresh = "Refrescar",
-                          refreshColour = "#ff5a00",
-                          background = "#FFFFFF",
-                          colour = "#000000",
-                          overlayColour = "#000000",
-                          overlayOpacity = 0.6,
-                          width = 450,
-                          size = 22
-                        ),
-                        
+                        #disconnectMessage(text = "TU sesion en la plataforma ha terminado. Presiona refrescar para iniciar nuevamente"),
+
                       tabItems(
                         inicio_ui("inicio"),
                         inscripcion_participantes_ui("inscripcion_participantes"),
